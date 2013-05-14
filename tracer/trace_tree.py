@@ -54,3 +54,5 @@ class RayTree(object):
         
         return parents
 
+
+# vim: et:ts=4

@@ -88,7 +88,7 @@ def rotz(ang):
         [0, 0, 0, 1]
     ])
 
-def translate(x, y, z):
+def translate(x=0, y=0, z=0):
     """Generate a homogenous transform for translation by x, y, z"""
     return N.array([
         [1, 0, 0, x],
@@ -96,3 +96,4 @@ def translate(x, y, z):
         [0 ,0, 1, z],
         [0, 0, 0, 1]
     ])
+

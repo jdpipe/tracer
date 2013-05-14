@@ -5,6 +5,7 @@
 
 import numpy as N
 from quadric import QuadricGM
+import pivy.coin as coin
 
 class SphericalGM(QuadricGM):
     """
@@ -22,7 +23,7 @@ class SphericalGM(QuadricGM):
         _rad - radius of the sphere, a float. 
         """
         QuadricGM.__init__(self)
-        self.set_radius(radius)  
+        self.set_radius(radius)
 
     def get_radius(self):
         return self._rad
@@ -91,6 +92,15 @@ class SphericalGM(QuadricGM):
         z = N.tile(self._rad * N.cos(theta), (1, x.shape[1]))
         
         return x, y, z
+
+    def get_scene_graph(self,resolution=1.):
+		n = coin.SoSeparator()
+		sc = coin.SoScale()
+		sc.scaleFactor = self._rad * coin.SbVec3f(1,1,1)
+		n.addChild(sc)
+		sp = coin.SoSphere()
+		n.addChild(sp)
+		return n
 
 class HemisphereGM(SphericalGM):
     """

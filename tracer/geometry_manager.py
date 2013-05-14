@@ -4,6 +4,7 @@
 # TODO: explore abstract meta-classes in Python.
 
 import numpy as N
+import pivy.coin as coin
 
 class GeometryManager(object):
     def find_intersections(self, frame, ray_bundle):
@@ -18,6 +19,7 @@ class GeometryManager(object):
         ray_bundle - a RayBundle instance with the information on the incoming
             bundle.
         """
+        # FIXME does find_intersections really need to include a 'frame' parameter?
         self._working_frame = frame
         self._working_bundle = ray_bundle
         
@@ -60,3 +62,29 @@ class GeometryManager(object):
         global coordinates.
         """
         pass
+
+    def get_scene_graph(self,resolution=1.):
+        """
+        Any object that provides a nice QuadMesh from the previous code should be able to render in Coin3D with with the following...
+        """
+        n = coin.SoSeparator()
+        X,Y,Z = self.mesh(resolution)
+        nr,nc = X.shape
+        A = [(X.flat[i],Y.flat[i],Z.flat[i]) for i in range(len(X.flat))]
+        coor = coin.SoCoordinate3()
+        coor.point.setValues(0, len(A), A)
+        n.addChild(coor)
+
+        sh = coin.SoShapeHints()
+        sh.shapeType = coin.SoShapeHintsElement.UNKNOWN_SHAPE_TYPE
+        sh.vertexOrdering = coin.SoShapeHintsElement.COUNTERCLOCKWISE
+        sh.faceType = coin.SoShapeHintsElement.UNKNOWN_FACE_TYPE
+        n.addChild(sh)
+
+        qm = coin.SoQuadMesh()
+        qm.verticesPerRow = nc
+        qm.verticesPerColumn = nr
+        n.addChild(qm)
+        return n
+
+# vim: et:ts=4

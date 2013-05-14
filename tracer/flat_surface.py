@@ -263,3 +263,5 @@ class RoundPlateGM(FiniteFlatGM):
         z = N.zeros_like(x)
         return x, y, z
 
+
+# vim: et:ts=4

@@ -121,3 +121,5 @@ class FiniteCylinder(InfiniteCylinder):
         
         return x, y, z
 
+
+# vim: et:ts=4

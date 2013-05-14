@@ -8,6 +8,7 @@
 
 import numpy as N
 from has_frame import HasFrame
+import pivy.coin as coin
 
 class Surface(HasFrame):
     """
@@ -125,3 +126,32 @@ class Surface(HasFrame):
         
         return glob[:3]
 
+    def get_scene_graph(self,resolution=1.):
+        """
+        Any object that provides a nice QuadMesh from the previous code should be able to render in Coin3D with with the following...
+        """
+    
+        n = self.get_scene_graph_transform()
+
+        o = self.get_optics_manager()
+        if hasattr(o,'get_all_hits'):
+            e, h = o.get_all_hits()
+            # plot the histogram into the scenegraph
+            """
+                How to do this?
+                * is the surface has a mesh, we could use IndexedFaceSet with
+                  colouring set for each face.
+                * if it's a flat surface, we can put a texture on the face
+                * but we want to do receivers with concave surfaces
+                * how to 'unwrap' the receiver won't always be obvious either
+                * we could use axisymmetric assumptions to simplify this
+                * maybe start with the flat surface case???
+            """
+            n.addChild(self._geom.get_scene_graph(resolution))
+        else:         
+            n.addChild(self._geom.get_scene_graph(resolution))
+
+        return n
+
+
+# vim: et:ts=4

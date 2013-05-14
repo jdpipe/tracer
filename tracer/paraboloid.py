@@ -9,7 +9,7 @@ from quadric import QuadricGM
 
 class Paraboloid(QuadricGM):
     """Implements the geometry of a circular paraboloid surface"""
-    def __init__(self, a=1., b=1.):
+    def __init__(self, a=1., b=None):
         """               
         Arguments: 
         a, b - describe the paraboloid as z = (x/a)**2 + (y/b)**2
@@ -18,6 +18,9 @@ class Paraboloid(QuadricGM):
         Private attributes:                                                                  
         a, b - describe the paraboloid as z = a*x**2 + b*y**2
         """ 
+        if b is None:
+	        b = a
+
         QuadricGM.__init__(self)
         self.a = 1./(a**2)
         self.b = 1./(b**2)
@@ -187,3 +190,5 @@ class HexagonalParabolicDishGM(Paraboloid):
 
         return select
 
+
+# vim: et:ts=4

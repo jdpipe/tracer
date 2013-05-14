@@ -193,3 +193,5 @@ class LambertianReceiver(AbsorptionAccountant):
     def __init__(self, absorptivity=1.):
         AbsorptionAccountant.__init__(self, LambertianReflector, absorptivity)
 
+
+# vim: et:ts=4

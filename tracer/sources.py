@@ -57,6 +57,9 @@ def solar_disk_bundle(num_rays,  center,  direction,  radius,  ang_range, flux=N
     Returns: 
     A RayBundle object with the above charachteristics set.
     """
+
+	# FIXME why should 'center' be a column vector... that's just annoying.
+
     a = pillbox_sunshape_directions(num_rays, ang_range)
     
     # Rotate to a frame in which <direction> is Z:
@@ -107,3 +110,5 @@ def square_bundle(num_rays, center, direction, width):
     rayb.set_directions(directions)
     return rayb
 
+
+# vim: et:ts=4
