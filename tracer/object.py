@@ -3,6 +3,7 @@
 import numpy as N
 from spatial_geometry import general_axis_rotation
 from assembly import Assembly
+import pivy.coin as coin
 
 class AssembledObject(Assembly):
     """ Defines an assembly of surfaces as an object. The object has its own set of 
@@ -12,7 +13,7 @@ class AssembledObject(Assembly):
     The object also tracks refractive indices as a ray bundle leaves or enters a new
     material.
     """
-    def __init__(self, surfs=None, bounds=None, transform=None):
+    def __init__(self, surfs=None, bounds=None,transform=None):
         """
         Attributes:
         surfaces - a list of Surface objects
@@ -20,7 +21,7 @@ class AssembledObject(Assembly):
             by.
         transform - a 4x4 array representing the homogenous transformation 
             matrix of this object relative to the coordinate system of its 
-            container
+            container (this can be overridden in the Assembly.add_object method)
         """
         # Use the supplied values or some defaults:
         if surfs is None:
@@ -36,6 +37,9 @@ class AssembledObject(Assembly):
         if transform is None:
             transform = N.eye(4)
         self.set_transform(transform)
+
+        #print "at creation, assembled object transform =",transform
+        #print "at creation, got transform =",self.get_transform()
     
     def get_surfaces(self):
         return self.surfaces
@@ -96,3 +100,14 @@ class AssembledObject(Assembly):
             in the next iteration.
         """
         return N.ones((len(self.surfaces), rays.get_num_rays()), dtype=N.bool)
+
+    def get_scene_graph(self):
+        n = self.get_scene_graph_transform()
+
+        #n.addChild(tr)
+        for sfc in self.surfaces:
+	        n.addChild(sfc.get_scene_graph())
+        return n
+
+
+# vim: et:ts=4

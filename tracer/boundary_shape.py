@@ -134,3 +134,5 @@ class BoundaryPlane(BoundaryShape):
             N.vstack((vertices.T, N.ones(vertices.shape[0]))))
         return local_z >= 0
 
+
+# vim: et:ts=4

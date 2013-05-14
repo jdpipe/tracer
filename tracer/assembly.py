@@ -2,6 +2,7 @@
 
 import operator
 import numpy as N
+import pivy.coin as coin
 
 from .spatial_geometry import general_axis_rotation
 from .has_frame import HasFrame
@@ -72,10 +73,9 @@ class Assembly(HasFrame):
         transform - the transformation matrix (as an array object) that describes 
             the object in the coordinate system of the Assembly
         """
-        if transform == None:
-            transform = N.eye(4)
         self._objects.append(object)
-        object.set_transform(transform)
+        if transform is not None:
+            object.set_transform(transform)
         self.transform_children()
 
     def add_assembly(self, assembly, transform=None):
@@ -131,3 +131,14 @@ class Assembly(HasFrame):
         const_t = self.get_transform()
         for obj in self._assemblies + self._objects:
             obj.transform_children(N.dot(assembly_transform, const_t))
+
+    def get_scene_graph(self):
+        n = self.get_scene_graph_transform()
+
+        for obj in self._assemblies:
+            n.addChild(obj.get_scene_graph())
+        for obj in self._objects:
+            n.addChild(obj.get_scene_graph())
+        return n
+
+# vim: et:ts=4

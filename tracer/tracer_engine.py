@@ -187,3 +187,5 @@ class TracerEngine():
              
         return bund.get_vertices(), bund.get_directions()
 
+
+# vim: et:ts=4

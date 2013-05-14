@@ -2,6 +2,7 @@
 #
 # References:
 # [1] http://www.siggraph.org/education/materials/HyperGraph/raytrace/rtinter4.htm
+# [2] http://en.wikipedia.org/wiki/Quadric
 
 import numpy as N
 from geometry_manager import GeometryManager
@@ -56,7 +57,7 @@ class QuadricGM(GeometryManager):
         # Gets the relevant A, B, C from whichever quadric surface, see [1]  
         A, B, C = self.get_ABC(ray_bundle)
         delta = B**2 - 4*A*C
-        
+        #print "delta",delta
         any_inters = delta >= 0
         num_inters = any_inters.sum()
         if num_inters == 0:
@@ -70,7 +71,10 @@ class QuadricGM(GeometryManager):
         
         pm = N.c_[[-1, 1]]
         hits = N.empty((2, num_inters))
-        almost_planar = A <= 1e-10
+        # NOTE: added 'abs' in following line in response to false detection of
+        # 'almost_planar' in simple tests with cone-ray intersection where
+        # quadratic coefficient 'A' was calculated as negative.. that OK? -- JP.
+        almost_planar = abs(A) <= 1e-10
         really_quadric = ~almost_planar
         hits[:,almost_planar] = N.tile(-C[almost_planar]/B[almost_planar], (2,1))
         hits[:,really_quadric] = \
@@ -171,3 +175,4 @@ class QuadricGM(GeometryManager):
             del self._idxs
         GeometryManager.done(self)
 
+# vim: et:ts=4

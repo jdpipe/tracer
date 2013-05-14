@@ -1,6 +1,7 @@
 # Represents an object that is locatable in 3D space with 6 degrees of freedom.
 
 import numpy as N
+import pivy.coin as coin
 
 class HasFrame(object):
     """
@@ -32,6 +33,9 @@ class HasFrame(object):
         self.set_location(location)
         self.set_rotation(rotation)
         self._temp_frame = self._transform
+
+        # TODO for compatibility with Coin3D we might need to store these rotations
+        # internally as quaternions... hmmm...???
 
     def get_location(self):
         return self._loc
@@ -73,3 +77,51 @@ class HasFrame(object):
         calculations."""
         self._temp_frame = N.dot(transform, self._transform)
 
+    def get_scene_graph_transform(self):
+        """
+        Create the Coin3D transform to translate and rotate this frame, in
+        accordance with the self._rot and self._loc matrices held in this class.
+        """
+        n = coin.SoSeparator()
+        if not N.all(N.equal(self._rot, N.eye(3))):
+            m = self._rot
+            # http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
+            tr = m[0,0] + m[1,1] + m[2,2]
+            if tr > 0:
+              S = N.sqrt(tr + 1.0)*2
+              qw = 0.25 * S
+              qx = (m[2,1] - m[1,2]) / S
+              qy = (m[0,2] - m[2,0]) / S
+              qz = (m[1,0] - m[0,1]) / S;
+            elif m[0,0] > m[1,1] and m[0,0] > m[2,2]:
+              S = N.sqrt(1.0 + m[0,0] - m[1,1] - m[2,2])*2
+              qw = (m[2,1] - m[1,2]) / S
+              qx = 0.25 * S
+              qy = (m[0,1] + m[1,0]) / S
+              qz = (m[0,2] + m[2,0]) / S
+            elif m[1,1] > m[2,2]:
+              S = N.sqrt(1.0 + m[1,1] - m[0,0] - m[2,2]) * 2
+              qw = (m[0,2] - m[2,0]) / S
+              qx = (m[0,1] + m[1,0]) / S
+              qy = 0.25 * S
+              qz = (m[1,2] + m[2,1]) / S
+            else:
+              S = N.sqrt(1.0 + m[2,2] - m[0,0] - m[1,1]) * 2
+              qw = (m[1,0] - m[0,1]) / S
+              qx = (m[0,2] + m[2,0]) / S
+              qy = (m[1,2] + m[2,1]) / S
+              qz = 0.25 * S
+            ro = coin.SoRotation()
+            ro.rotation = (qx,qy,qz,qw)
+            n.addChild(ro)
+
+        if N.any(self._loc != N.array((0,0,0))):
+            tr = coin.SoTranslation()
+            x,y,z = self._loc
+            tr.translation = coin.SbVec3f((x,y,z))
+            #print "tr.translation = ",tr.translation.getValue().getValue()
+            n.addChild(tr)
+
+        return n
+
+# vim: et:ts=4
