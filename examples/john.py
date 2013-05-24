@@ -57,14 +57,19 @@ src = solar_disk_bundle(5000, cr, dr, d*1., ar, G)
 engine = TracerEngine(A)
 engine.ray_tracer(src, 100, 0.001)
 
-# draw the rays... adapted from ../tracer/mayavi/scene_view.py
-def show_rays(engine, escaping_len=20.):
+
+def show_rays(engine, escaping_len=20., highlight_level=None):
+    """
+    Function to draw the rays to a Coin3D scenegraph.
+    Adapted from ../tracer/mayavi/scene_view.py
+    """
     tree = engine.tree
     no = coin.SoSeparator()
     print tree.num_bunds()
     
     # loop through the reflection sequences?
-    co = []
+    co = [] # regular lines
+    co_h = [] # highlighted lines
     for level in xrange(tree.num_bunds()):
         print "bundle",level
         start_rays = tree[level]
@@ -91,8 +96,6 @@ def show_rays(engine, escaping_len=20.):
                 first_child = N.where(ray == parents)[0][0]
                 c1 = sv[:,ray]
                 c2 = ev[:,first_child]
-                co.append((c1[0],c1[1],c1[2]))
-                co.append((c2[0],c2[1],c2[2]))
                 #endpoints = N.c_[sv[:,ray], ev[:,first_child]]
             else:
                 l = escaping_len
@@ -101,40 +104,56 @@ def show_rays(engine, escaping_len=20.):
                 # Escaping ray.
                 c1 = sv[:,ray]
                 c2 = sv[:,ray] + sd[:,ray]*l
-                co.append((c1[0],c1[1],c1[2]))
-                co.append((c2[0],c2[1],c2[2]))
+            if level == highlight_level:
+                 co_h += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
+            else:
+                 co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
 
-            #lines.append(scene.mlab.plot3d(*endpoints, tube_radius=None))
     #print "num of vertices",len(co)
-    #print co
+    print "co_h",len(co_h)
+    print "co",len(co)
 
-    ma = coin.SoMaterial()
-    ma.diffuseColor = (1,1,0.5)
-    no.addChild(ma)
+    # normal rays
+    def plot_rays_color(co, color=(1,1,0.5)):
+        """
+        Add ray set of line color `color` to scenegraph `node`. Rays `co`
+        should be stored as sequences of 3-vector pairs in a list, eg
+        [(x1,y1,z1),(x2,y2,z2),...]
+        """
+        no1 = coin.SoSeparator()
 
-    ds = coin.SoDrawStyle()
-    ds.style = ds.LINES
-    ds.lineWidth = 2
-    no.addChild(ds)
+        ma1 = coin.SoMaterial()
+        ma1.diffuseColor = color
+        no1.addChild(ma1)
 
-    coor = coin.SoCoordinate3()
-    coor.point.setValues(0, len(co), co)
-    #print [x.getValue() for x in coor.point.getValues()]
-    no.addChild(coor)
+        ds = coin.SoDrawStyle()
+        ds.style = ds.LINES
+        ds.lineWidth = 2
+        no1.addChild(ds)
 
-    ls = coin.SoLineSet()
-    ind = [2] * (len(co)/2)
-    #print "ind =",ind
-    ls.numVertices.setValues(0, len(ind), ind)
-    no.addChild(ls)
+        coor = coin.SoCoordinate3()
+        coor.point.setValues(0, len(co), co)
+        no1.addChild(coor)
+
+        ls = coin.SoLineSet()
+        ind = [2] * (len(co)/2)
+        ls.numVertices.setValues(0, len(ind), ind)
+        no1.addChild(ls)
+
+        return no1;
     
+    no.addChild(plot_rays_color(co))
+    no.addChild(plot_rays_color(co_h, color=(1,1,1)))
+
     return no
 
-# render the scene with Pivy
-r = coin.SoSeparator()
+    
 
-# create axes
+
 def axis_labels(length=10):
+    """
+    Create axis arrows/labels for addition to a Coin3D scenegraph.
+    """
     r = coin.SoSeparator()
     st = coin.SoDrawStyle()
     r.addChild(st)
@@ -162,14 +181,14 @@ def axis_labels(length=10):
         r.addChild(ls)
     return r
 
+
+# render the scene with Pivy
+r = coin.SoSeparator()
 r.addChild(axis_labels())
-
-r.addChild(show_rays(engine))
-
+r.addChild(show_rays(engine, highlight_level=2))
 r.addChild(A.get_scene_graph())
 
 win = SoGui.init("hello")
-
 viewer = SoGuiExaminerViewer(win)
 viewer.setSceneGraph(r)
 viewer.setTitle("Examiner Viewer")
