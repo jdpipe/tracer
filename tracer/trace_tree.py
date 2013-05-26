@@ -31,7 +31,7 @@ class RayTree(object):
         """
         return [bund.get_parents() for bund in self._bunds[1:]]
     
-    def ray_history(ray_index, level=None):
+    def ray_history(self, ray_index, level=None):
         """
         Return, in reverse order, all the indices into ray bundles starting
         from the given ray, going back to the original bundle. Starts with the
