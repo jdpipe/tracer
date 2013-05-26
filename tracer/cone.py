@@ -125,7 +125,7 @@ class Cone(InfiniteCone):
 
         # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
         hitting = inside & positive
-        select[N.logical_and(*hitting)] = 0
+        select[N.logical_and(*hitting)] = 1
         print "*hitting",N.logical_xor(*hitting)
         one_hitting = N.logical_xor(*hitting)
         print "one_hitting=\n",one_hitting
@@ -185,33 +185,37 @@ class ConicalFrustum(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        print "prm",prm        
-        print "A**-1 =",N.linalg.inv(self._working_frame) 
-        print "A trim",N.linalg.inv(self._working_frame)[None,2,:,None]       
-        print "coords",coords
-        print "concat",N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1)
+        #print "prm",prm        
+        #print "A**-1 =",N.linalg.inv(self._working_frame) 
+        #print "A trim",N.linalg.inv(self._working_frame)[None,2,:,None]       
+        #print "coords",coords
+        #print "concat",N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1)
 
         # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
 
-        print "height=\n",height
+        #print "height=\n",height
         #print "self.h =",self.h
 
         inside = (self.h1 <= height) & (height <= self.h2)
 
-        print "inside=\n",inside
+        #print "inside=\n",inside
 
-        positive = prm > 0
-
+        # 
+        positive = prm > 1e-12
+        first = (prm == N.amin(prm,axis=0))
+        #print "first",first
+        #print "first and positive",first&positive
         # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
-        hitting = inside & positive
+        hitting = inside & positive #& first
         select[N.logical_and(*hitting)] = 0
-        print "*hitting",N.logical_xor(*hitting)
+        #print "*hitting",N.logical_xor(*hitting)
         one_hitting = N.logical_xor(*hitting)
-        print "one_hitting=\n",one_hitting
+        #print "one_hitting=\n",one_hitting
+
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
-        print "select",select
+        #print "select",select
 
         return select
 

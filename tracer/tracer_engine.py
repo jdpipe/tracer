@@ -117,6 +117,8 @@ class TracerEngine():
         surfs_relevancy = N.ones((num_surfs, bund.get_num_rays()), dtype=N.bool)
         
         for i in xrange(reps):
+            print "\nBUNDLE %d\n"%i
+
             front_surf, owned_rays = self.intersect_ray(bund, surfaces, objects, \
                 surf_ownership, ray_ownership, surfs_relevancy)
             outg = []

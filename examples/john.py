@@ -1,6 +1,7 @@
 
 import numpy as np
 import pylab
+np.set_printoptions(linewidth=140)
 
 from tracer.surface import *
 from tracer.cone import *
@@ -52,7 +53,7 @@ dr = np.array([0,0,-1])
 ar = 0*5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
 #TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(5000, cr, dr, d*1., ar, G)
+src = solar_disk_bundle(100000, cr, dr, d*1., ar, G)
 
 engine = TracerEngine(A)
 engine.ray_tracer(src, 100, 0.001)
@@ -70,6 +71,7 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
     # loop through the reflection sequences?
     co = [] # regular lines
     co_h = [] # highlighted lines
+    hist = {} # ray histories, for highlighted rays
     for level in xrange(tree.num_bunds()):
         print "bundle",level
         start_rays = tree[level]
@@ -105,13 +107,19 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
                 c1 = sv[:,ray]
                 c2 = sv[:,ray] + sd[:,ray]*l
             if level == highlight_level:
-                 co_h += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
+                hist[ray] = tree.ray_history(ray,level)
+                co_h += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
             else:
-                 co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
+                co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
 
     #print "num of vertices",len(co)
-    print "co_h",len(co_h)
-    print "co",len(co)
+    #print "co_h",len(co_h)
+    #print "co",len(co)
+    #print "hist",hist
+
+    #print "ray history:"
+    #for i in hist:
+    #    detailed_ray_history(engine,hist[i])
 
     # normal rays
     def plot_rays_color(co, color=(1,1,0.5)):
@@ -147,8 +155,20 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
 
     return no
 
-    
-
+def detailed_ray_history(engine,seq):
+    """
+    Print a detailed ray history for a particular ray, being a tuple returned 
+    from TraceTree.ray_history.
+    """
+    tree = engine.tree
+    n = len(seq)
+    print seq
+    for i in range(n):
+        bund = tree[i]
+        ray = seq[(n-1)-i]
+        print "...bund",i,"ray",ray
+        print "...from",bund.get_vertices()[:,ray]
+        print "...direction",bund.get_directions()[:,ray]
 
 def axis_labels(length=10):
     """
