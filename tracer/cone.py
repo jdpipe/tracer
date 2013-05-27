@@ -63,15 +63,7 @@ class InfiniteCone(QuadricGM):
         B = 2*(v[0]*d[0] + v[1]*d[1] - self.c**2*v[2]*d[2])
         C = v[0]**2 + v[1]**2 - (self.c*v[2])**2
 
-        mult = 1. - 2.*(A<0)
-        A *= mult
-        B *= mult
-        C *= mult
-
-        print "mult",mult
-
         return A, B, C
-
 
 class Cone(InfiniteCone):
     """

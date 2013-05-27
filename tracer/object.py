@@ -37,10 +37,7 @@ class AssembledObject(Assembly):
         if transform is None:
             transform = N.eye(4)
         self.set_transform(transform)
-
-        #print "at creation, assembled object transform =",transform
-        #print "at creation, got transform =",self.get_transform()
-    
+   
     def get_surfaces(self):
         return self.surfaces
 

@@ -25,14 +25,20 @@ A = Assembly()
 alpha = 0.04 # dish absorptivity
 d = 22 # dish diameter
 f = 13.4 # dish focal length
-P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], transform=rotx(0*N.pi/6))
+#P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], transform=rotx(0*N.pi/6))
 #A.add_object(P)
 
 
 # a beautiful cone...
-CO = AssembledObject(surfs=[Surface(ConicalFrustum(11.,8.,11.), Reflective(alpha))], transform=rotx(N.pi/3))
-A.add_object(CO)
+#tr = rotx(N.pi/3) * translate(z=3)
+#tr = rotx(N.pi/3)
+#tr = translate(z=-8)
+#tr = None
+print "CONE"
 
+tr = N.dot(rotx(N.pi/3), translate(z=-8))
+CO = AssembledObject(surfs=[Surface(ConicalFrustum(11.,8.,11.), Reflective(alpha))], transform=tr)
+A.add_object(CO)
 
 r = 0.1
 for z in range(14):
@@ -53,7 +59,7 @@ dr = np.array([0,0,-1])
 ar = 0*5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
 #TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(100000, cr, dr, d*1., ar, G)
+src = solar_disk_bundle(10000, cr, dr, d*3., ar, G)
 
 engine = TracerEngine(A)
 engine.ray_tracer(src, 100, 0.001)
