@@ -37,7 +37,7 @@ f = 13.4 # dish focal length
 print "CONE"
 
 tr = N.dot(rotx(N.pi/3), translate(z=-8))
-CO = AssembledObject(surfs=[Surface(ConicalFrustum(11.,8.,11.), Reflective(alpha))], transform=tr)
+CO = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=5,z2=2,r2=10), Reflective(alpha))], transform=tr)
 A.add_object(CO)
 
 r = 0.1

@@ -70,10 +70,12 @@ class InfiniteCone(QuadricGM):
         return A, B, C
 
 class Cone(InfiniteCone):
+    # FIXME TODO add support for apex not at z=0
     """
     Implements a finite cone. Parameters are r (base radius) and h (cone
     height). The cone is aligned with the (positive) z axis, and the apex of the
     cone is at the origin.
+
     """
     def __init__(self, r, h):
         if h < 0 or r < 0:
@@ -149,19 +151,24 @@ class Cone(InfiniteCone):
 
 
 class ConicalFrustum(InfiniteCone):
+    # FIXME Must z1 > z2?? Test both cases. Especially normals.
     """
-    Implements a conical frustum, with base radius r, (virtual) apex at the
-    original, small face at z=h1, large face at z=h2, axis on the z-axis.
+    Implements a conical frustum from (z1,r1) to (z2,r2), along the z-axis.
+    z1 must not equal z2; r1 must not equal r2; r1 and r2 must be positive.
     """
-    def __init__(self, r, h1, h2):
-        if r <= 0 or h1 <= 0 or h2 <= 0:
+    def __init__(self, z1, r1, z2, r2):
+        if r1 <= 0 or r2 <= 0:
             raise AttributeError
-        if h2 <= h1:
+        if r1 == r2 or z1 == z2:
             raise AttributeError
-        self.h1 = h1
-        self.h2 = h2
-        c = r / h2
-        InfiniteCone.__init__(self, c)
+        if z1 > z2:
+            raise AttributeError
+
+        c = float(r2 - r1)/(z2 - z1)
+        a = (r2*z1 - r1*z2) / (r2 - r1)
+        InfiniteCone.__init__(self, c=c, a=a)
+        self.z1 = z1
+        self.z2 = z2
     
     def _select_coords(self, coords, prm):
         """
@@ -181,38 +188,16 @@ class ConicalFrustum(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        #print "prm",prm        
-        #print "A**-1 =",N.linalg.inv(self._working_frame) 
-        #print "A trim",N.linalg.inv(self._working_frame)[None,2,:,None]       
-        #print "coords",coords
-        #print "concat",N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1)
-
-        # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
 
-        #print "height=\n",height
-        #print "self.h =",self.h
+        inside = (self.z1 <= height) & (height <= self.z2)
 
-        inside = (self.h1 <= height) & (height <= self.h2)
-
-        #print "inside=\n",inside
-
-        # 
         positive = prm > 1e-12
-        first = (prm == N.amin(prm,axis=0))
-        #print "first",first
-        #print "first and positive",first&positive
-        # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
-        hitting = inside & positive #& first
+        hitting = inside & positive
         select[N.logical_and(*hitting)] = 0
-        #print "*hitting",N.logical_xor(*hitting)
         one_hitting = N.logical_xor(*hitting)
-        #print "one_hitting=\n",one_hitting
-
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
-        #print "select",select
-
         return select
 
     def mesh(self, resolution):
@@ -231,8 +216,8 @@ class ConicalFrustum(InfiniteCone):
         """
 
         # Generate a circular-edge mesh using polar coordinates.    
-        r1 = self.c * self.h1
-        r2 = self.c * self.h2
+        r1 = self.c * (self.z1 - self.a)
+        r2 = self.c * (self.z2 - self.a)
         rs = N.r_[r1,r2]
         # Make the circumferential points at the requested resolution.
         ang_end = 2*N.pi + 1./(r2*resolution)
@@ -240,7 +225,7 @@ class ConicalFrustum(InfiniteCone):
 
         x = N.outer(rs, N.cos(angs))
         y = N.outer(rs, N.sin(angs))
-        z = 1/self.c * N.sqrt(x**2 + y**2)
+        z = self.a + 1/self.c * N.sqrt(x**2 + y**2)
         
         return x, y, z
     
