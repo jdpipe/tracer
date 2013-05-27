@@ -83,6 +83,13 @@ class HasFrame(object):
         accordance with the self._rot and self._loc matrices held in this class.
         """
         n = coin.SoSeparator()
+        if N.any(self._loc != N.array((0,0,0))):
+            tr = coin.SoTranslation()
+            x,y,z = self._loc
+            tr.translation = coin.SbVec3f((x,y,z))
+            #print "tr.translation = ",tr.translation.getValue().getValue()
+            n.addChild(tr)
+
         if not N.all(N.equal(self._rot, N.eye(3))):
             m = self._rot
             # http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
@@ -114,13 +121,6 @@ class HasFrame(object):
             ro = coin.SoRotation()
             ro.rotation = (qx,qy,qz,qw)
             n.addChild(ro)
-
-        if N.any(self._loc != N.array((0,0,0))):
-            tr = coin.SoTranslation()
-            x,y,z = self._loc
-            tr.translation = coin.SbVec3f((x,y,z))
-            #print "tr.translation = ",tr.translation.getValue().getValue()
-            n.addChild(tr)
 
         return n
 
