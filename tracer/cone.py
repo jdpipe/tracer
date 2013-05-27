@@ -10,16 +10,20 @@ class InfiniteCone(QuadricGM):
     Implements the geometry of an infinite circular conical surface. That
     means the sloping side-walls of the cone, doesn't include the base.
     """
-    def __init__(self, c = 1.):
+    def __init__(self, c = 1., a = 0.):
         """          
         Arguments: 
-        c - constant in x**2 + y**2 = (c*z)**2, c = r/h (base radius/height)
+        c - cone gradient (r/h)
+        a - position of cone apex on z axis
         
+        Cone equation is x**2 + y**2 = (c*(z-a))**2
         Private attributes:                                                                  
-        c - constant in x**2 + y**2 = (c*z)**2
+        c - cone gradient (r/h)
+        a - position of cone apex on z axis
         """ 
         QuadricGM.__init__(self)
         self.c = c
+        self.a = a
 
     def _normals(self, hits, directs):
         """
@@ -35,7 +39,7 @@ class InfiniteCone(QuadricGM):
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
         partial_x = 2*hit[0]
         partial_y = 2*hit[1]
-        partial_z = -2*self.c**2*hit[2]
+        partial_z = -2*self.c**2*(hit[2] - self.a)
 
         #FIXME check what happens with inside and outside reflections?
 
@@ -60,8 +64,8 @@ class InfiniteCone(QuadricGM):
             N.vstack((ray_bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
         
         A = d[0]**2 + d[1]**2 - (self.c*d[2])**2
-        B = 2*(v[0]*d[0] + v[1]*d[1] - self.c**2*v[2]*d[2])
-        C = v[0]**2 + v[1]**2 - (self.c*v[2])**2
+        B = 2*(v[0]*d[0] + v[1]*d[1] - self.c**2*(v[2] - self.a)*d[2])
+        C = v[0]**2 + v[1]**2 - (self.c*(v[2] - self.a))**2
 
         return A, B, C
 
