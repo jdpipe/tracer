@@ -126,7 +126,7 @@ class Surface(HasFrame):
         
         return glob[:3]
 
-    def get_scene_graph(self,resolution=1.):
+    def get_scene_graph(self,resolution=None):
         """
         Any object that provides a nice QuadMesh from the previous code should be able to render in Coin3D with with the following...
         """

@@ -63,9 +63,11 @@ class GeometryManager(object):
         """
         pass
 
-    def get_scene_graph(self,resolution=1.):
+    def get_scene_graph(self,resolution=None):
         """
         Any object that provides a nice QuadMesh from the previous code should be able to render in Coin3D with with the following...
+
+        Prefer to allow objects to calculate a 'suitable' resolution based on size.
         """
         n = coin.SoSeparator()
         X,Y,Z = self.mesh(resolution)

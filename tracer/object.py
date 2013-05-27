@@ -98,12 +98,12 @@ class AssembledObject(Assembly):
         """
         return N.ones((len(self.surfaces), rays.get_num_rays()), dtype=N.bool)
 
-    def get_scene_graph(self):
+    def get_scene_graph(self,resolution=None):
         n = self.get_scene_graph_transform()
 
         #n.addChild(tr)
         for sfc in self.surfaces:
-	        n.addChild(sfc.get_scene_graph())
+	        n.addChild(sfc.get_scene_graph(resolution))
         return n
 
 

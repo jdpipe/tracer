@@ -132,7 +132,7 @@ class Cone(InfiniteCone):
 
         return select
     
-    def get_scene_graph(self, resolution = 1.):
+    def get_scene_graph(self, resolution = None):
         n = coin.SoSeparator()
         ro = coin.SoRotationXYZ()
         ro.axis = coin.SoRotationXYZ.X
@@ -165,10 +165,10 @@ class ConicalFrustum(InfiniteCone):
             raise AttributeError
 
         c = float(r2 - r1)/(z2 - z1)
-        a = (r2*z1 - r1*z2) / (r2 - r1)
+        a = float(r2*z1 - r1*z2) / (r2 - r1)
         InfiniteCone.__init__(self, c=c, a=a)
-        self.z1 = z1
-        self.z2 = z2
+        self.z1 = float(z1)
+        self.z2 = float(z2)
     
     def _select_coords(self, coords, prm):
         """
@@ -200,7 +200,7 @@ class ConicalFrustum(InfiniteCone):
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
         return select
 
-    def mesh(self, resolution):
+    def mesh(self, resolution=None):
         """
         Represent the surface as a mesh in local coordinates. Uses polar
         bins, i.e. the points are equally distributed by angle and radius,
@@ -214,19 +214,25 @@ class ConicalFrustum(InfiniteCone):
         x, y, z - each a 2D array holding in its (i,j) cell the x, y, and z
             coordinate (respectively) of point (i,j) in the mesh.
         """
-
         # Generate a circular-edge mesh using polar coordinates.    
         r1 = self.c * (self.z1 - self.a)
         r2 = self.c * (self.z2 - self.a)
-        rs = N.r_[r1,r2]
+        rs = N.r_[min(r1,r2),max(r1,r2)]
+
+        if resolution is None:
+            angres = 2*N.pi / 40
+        else:
+            angres = 2*N.pi * (resolution / 2*N.pi*max(r1,r2))
+
         # Make the circumferential points at the requested resolution.
-        ang_end = 2*N.pi + 1./(r2*resolution)
-        angs = N.r_[0:ang_end:1./(r2*resolution)]
+        ang_end = 2*N.pi
+        angs = N.r_[0:ang_end+angres:angres]
 
         x = N.outer(rs, N.cos(angs))
         y = N.outer(rs, N.sin(angs))
         z = self.a + 1/self.c * N.sqrt(x**2 + y**2)
         
+        print  angs.shape
         return x, y, z
     
     #use get_scene_graph from GeometryManager, since we've implemented mesh.
