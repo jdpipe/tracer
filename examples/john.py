@@ -53,10 +53,10 @@ R = AssembledObject(surfs=[Surface(RectPlateGM(rw,rh), LambertianReceiver(alpha)
 # do a raytrace
 cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
-ar = 0*5e-3 # radians, sun rays angular range (what's the correct value?)
+ar = 5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
 #TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(10000, cr, dr, d*1., ar, G)
+src = solar_disk_bundle(1000, cr, dr, d*1., ar, G)
 
 engine = TracerEngine(A)
 engine.ray_tracer(src, 100, 0.001)
