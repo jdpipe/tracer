@@ -57,7 +57,7 @@ class QuadricGM(GeometryManager):
         # Gets the relevant A, B, C from whichever quadric surface, see [1]  
         A, B, C = self.get_ABC(ray_bundle)
         delta = B**2 - 4*A*C
-        #print "delta",delta
+        print "delta",delta
         any_inters = delta >= 0
         num_inters = any_inters.sum()
         if num_inters == 0:
@@ -68,17 +68,24 @@ class QuadricGM(GeometryManager):
         B = B[any_inters]
         C = C[any_inters]
         delta = N.sqrt(delta[any_inters])
-        
-        pm = N.c_[[-1, 1]]
+        print 'B=', B
+        print 'A=', A
+        print 'C=', C
+
+        #pm = N.c_[[-1, 1]]
         hits = N.empty((2, num_inters))
         # NOTE: added 'abs' in following line in response to false detection of
         # 'almost_planar' in simple tests with cone-ray intersection where
         # quadratic coefficient 'A' was calculated as negative.. that OK? -- JP.
-        almost_planar = abs(A) <= 1e-10
-        really_quadric = ~almost_planar
-        hits[:,almost_planar] = N.tile(-C[almost_planar]/B[almost_planar], (2,1))
-        hits[:,really_quadric] = \
-            (-B[really_quadric] + pm*delta[really_quadric])/(2*A[really_quadric])
+        #almost_planar = abs(A) <= 1e-10
+        #really_quadric = ~almost_planar
+        #hits[:,almost_planar] = N.tile(-C[almost_planar]/B[almost_planar], (2,1))
+        #hits[:,really_quadric] = \
+            #(-B[really_quadric] + pm*delta[really_quadric])/(2*A[really_quadric])
+        sgnB=N.divide(B,abs(B))
+        q=-0.5*(B+sgnB*delta)
+        hits[0,:]=N.divide(q,A)
+        hits[1,:]=N.divide(C,q)
         inters_coords = v[:,any_inters] + d[:,any_inters]*hits.reshape(2,1,-1)
         
         # Quadrics can have two intersections. Here we allow child classes
