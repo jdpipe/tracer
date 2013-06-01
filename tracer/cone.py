@@ -111,13 +111,8 @@ class Cone(InfiniteCone):
         # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
-
-        print "height=\n",height
-        #print "self.h =",self.h
-
+            
         inside = (height >= 0) & (height <= self.h)
-
-        print "inside=\n",inside
 
         positive = prm > 0
 
@@ -193,11 +188,13 @@ class ConicalFrustum(InfiniteCone):
 
         inside = (self.z1 <= height) & (height <= self.z2)
 
-        positive = prm > 1e-12
+        positive = prm > 0
+
         hitting = inside & positive
         select[N.logical_and(*hitting)] = 0
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
+
         return select
 
     def mesh(self, resolution=None):

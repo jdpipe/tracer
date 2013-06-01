@@ -31,14 +31,14 @@ A.add_object(P)
 
 
 # a beautiful cone...
-alpha2 = 0.04
+alpha2 = 0.8
 tr = N.dot(rotx(N.pi), translate(z=-0.3))
 CO1 = AssembledObject(surfs=[Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), Reflective(alpha2))], transform=tr)
 A.add_object(CO1)
 CO2 = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), Reflective(alpha2))], transform=tr)
 A.add_object(CO2)
 
-r = 0.1
+#r = 0.1
 #for z in range(14):
 	#tr = translate(0,0,z)
 	#print "translation",y,"=",tr
@@ -52,7 +52,7 @@ r = 0.1
 #A.add_object(R)
 
 # do a raytrace
-cr = np.array([[0,0,-0.5*f]]).T
+cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
 ar = 5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux

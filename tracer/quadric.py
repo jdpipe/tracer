@@ -54,10 +54,10 @@ class QuadricGM(GeometryManager):
         params.fill(N.inf)
         vertices = N.empty((3,n))
         
-        # Gets the relevant A, B, C from whichever quadric surface, see [1]  
+        # Gets the relevant A, B, C from whichever quadric surface, see [1]
         A, B, C = self.get_ABC(ray_bundle)
+        # Identify linear equations        
         delta = B**2 - 4*A*C
-        #print "delta",delta
         any_inters = delta >= 0
         num_inters = any_inters.sum()
         if num_inters == 0:
@@ -93,6 +93,20 @@ class QuadricGM(GeometryManager):
 
         #print "hits =\n",hits
     
+        is_linear = A == 0
+        is_Bnull = B == 0
+        is_not_Bnull = ~is_Bnull
+        is_quadric = ~is_linear
+
+        hits = N.empty((2, num_inters))
+        hits[:,is_linear] = N.tile(-C[is_linear]/B[is_linear], (2,1))
+        
+        q = -0.5*(B+N.sign(B)*delta)
+        hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
+        hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]
+        hits[0,is_quadric & is_Bnull] = -N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
+        hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
+                    
         inters_coords = v[:,any_inters] + d[:,any_inters]*hits.reshape(2,1,-1)
         
         # Quadrics can have two intersections. Here we allow child classes
