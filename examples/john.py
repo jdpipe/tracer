@@ -5,6 +5,7 @@ np.set_printoptions(linewidth=140)
 
 from tracer.surface import *
 from tracer.cone import *
+from tracer.cylinder import *
 from tracer.sphere_surface import *
 from tracer.paraboloid import *
 from tracer.flat_surface import *
@@ -14,36 +15,50 @@ from tracer.object import *
 from tracer.spatial_geometry import *
 from tracer.sources import *
 from tracer.tracer_engine import *
+from tracer.models.one_sided_mirror import *
+import types
 
 import pivy.coin as coin
 SOGUI_BINDING="SoQt"
 from pivy.sogui import *
 
+
 A = Assembly()
 
 # Paraboloidal dish...
-alpha = 0.04 # dish absorptivity
+alpha = 0 # dish absorptivity
 d = 22 # dish diameter
 f = 13.4 # dish focal length
 tr0 = translate(z=-f)
 P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], transform=tr0)
 A.add_object(P)
 
+# Cylinder
+#alpha3 = 0.5
+#tr = N.dot(rotx(N.pi), translate(z=-0.3))
+#CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(0.8, 0.8), Reflective(alpha3))], transform=tr)
+#A.add_object(CY1)
 
-# a beautiful cone...
-alpha2 = 0.8
+# A beautiful thick, double frustum with 2 different sides. Still leaks.
+
+alpha2 = 0.5
 tr = N.dot(rotx(N.pi), translate(z=-0.3))
-CO1 = AssembledObject(surfs=[Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), Reflective(alpha2))], transform=tr)
-A.add_object(CO1)
-CO2 = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), Reflective(alpha2))], transform=tr)
-A.add_object(CO2)
+width = 1e-10 # receiver thickness at frustii junction
 
-#r = 0.1
-#for z in range(14):
-	#tr = translate(0,0,z)
-	#print "translation",y,"=",tr
-	#S = AssembledObject(surfs=[Surface(SphericalGM(r), Reflective(alpha))], transform=tr)
-	#A.add_object(S)
+CO1front = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), ReflectiveReceiver(alpha2))
+CO1back = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7+width), Reflective(alpha2))
+CO1 = AssembledObject(surfs=[CO1front,CO1back], transform=tr)
+
+CO1.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO1, CO1.__class__)
+
+CO2front = Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), ReflectiveReceiver(alpha2))
+CO2back = Surface(ConicalFrustum(z1=0,r1=0.7+width,z2=0.3,r2=0.4), ReflectiveReceiver(alpha2))
+CO2 = AssembledObject(surfs=[CO2front,CO2back], transform=tr)
+
+CO2.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO2, CO2.__class__)
+
+A.add_object(CO1)
+A.add_object(CO2)
 
 # A target surface
 #rw = 1.
@@ -56,8 +71,9 @@ cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
 ar = 5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
+nrays = 10000 # number of rays escaping the source
 #TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(100000, cr, dr, d*1., ar, G)
+src = solar_disk_bundle(nrays, cr, dr, d*1., ar, G)
 
 engine = TracerEngine(A)
 engine.ray_tracer(src, 100, 0.001)

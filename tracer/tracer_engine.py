@@ -58,15 +58,19 @@ class TracerEngine():
                 in_rays = bundle
             stack[surf_num, owned_rays[surf_num]] = \
                 surfaces[surf_num].register_incoming(in_rays)
+
+        sens = 1e-10 # stack sensibility cutoff parameter; seems to have an influence on 
+                     # leaking rays. Why stack == 0 does not work? 
         
         # Raise an error if any of the parameters are negative
-        if (stack < -1e-16).any():
+        if (stack < 0).any():
             raise ValueError("Parameters must all be positive")
         
         # If parameter == 0, ray does not actually hit object, but originates from there; 
-        # so it should be ignored in considering intersections 
-        if (stack <= 1e-10).any():
-            zeros = N.where(stack <= 1e-6)
+        # so it should be ignored in considering intersections          
+      
+        if (stack <= sens).any():
+            zeros = N.where(stack <= sens)
             stack[zeros] = N.inf
 
         # Find the smallest parameter for each ray, and use that as the final one,

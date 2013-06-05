@@ -34,17 +34,22 @@ class InfiniteCone(QuadricGM):
         hits - the coordinates of intersections, as an n by 3 array.
         directs - directions of the corresponding rays, n by 3 array.
         """
+        # Transform the position and directions of the hits temporarily in the frame of 
+        # the geometry for calculations       
         hit = N.dot(N.linalg.inv(self._working_frame), 
             N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
+
+        # Partial derivation of the 'hit' equations        
         partial_x = 2*hit[0]
         partial_y = 2*hit[1]
-        partial_z = -2*self.c**2*(hit[2] - self.a)
+        partial_z = -2*self.c**2*(hit[2] - self.a)        
 
         #FIXME check what happens with inside and outside reflections?
 
         local_normal = N.vstack((partial_x, partial_y, partial_z))
         local_unit = local_normal/N.sqrt(N.sum(local_normal**2, axis=0))
+
         down = N.sum(dir_loc * local_unit, axis=0) > 0
         local_unit[:,down] *= -1
         normals = N.dot(self._working_frame[:3,:3], local_unit)
@@ -52,8 +57,6 @@ class InfiniteCone(QuadricGM):
         return normals  
     
     def get_ABC(self, ray_bundle):
-        # FIXME check this with a test case.
-        # FIXME TODO XXX the calculation of intersections goes wrong if A,B,C are all negated
         """
         TODO Determines the variables forming the relevant quadric equation, [1]
         """
@@ -92,7 +95,7 @@ class Cone(InfiniteCone):
 
         Arguments:
         coords - a 2 by 3 by n array whose each column is the global coordinates
-            of one intersection point of a ray with the sphere.
+            of one intersection point of a ray with the surface geometry.
         prm - a 2 by n array (CHECK THIS) giving the parametric location on the
             ray where the intersection occurs.
 
@@ -102,28 +105,18 @@ class Cone(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        print "prm",prm        
-        print "A**-1 =",N.linalg.inv(self._working_frame) 
-        print "A trim",N.linalg.inv(self._working_frame)[None,2,:,None]       
-        print "coords",coords
-        print "concat",N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1)
-
         # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
             
         inside = (height >= 0) & (height <= self.h)
-
         positive = prm > 0
 
         # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
         hitting = inside & positive
         select[N.logical_and(*hitting)] = 1
-        print "*hitting",N.logical_xor(*hitting)
         one_hitting = N.logical_xor(*hitting)
-        print "one_hitting=\n",one_hitting
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
-        print "select",select
 
         return select
     
@@ -229,7 +222,7 @@ class ConicalFrustum(InfiniteCone):
         y = N.outer(rs, N.sin(angs))
         z = self.a + 1/self.c * N.sqrt(x**2 + y**2)
         
-        print  angs.shape
+        #print  angs.shape
         return x, y, z
     
     #use get_scene_graph from GeometryManager, since we've implemented mesh.
