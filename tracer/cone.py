@@ -114,6 +114,9 @@ class Cone(InfiniteCone):
             
         inside = (height >= 0) & (height <= self.h)
 
+        prm_ord = N.argsort(prm)
+        prm = prm[prm_ord]
+
         positive = prm > 0
 
         # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
@@ -125,7 +128,7 @@ class Cone(InfiniteCone):
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
         print "select",select
 
-        return select
+        return select[prm_ord]
     
     def get_scene_graph(self, resolution = None):
         n = coin.SoSeparator()
@@ -219,7 +222,7 @@ class ConicalFrustum(InfiniteCone):
         if resolution is None:
             angres = 2*N.pi / 40
         else:
-            angres = 2*N.pi * (resolution / 2*N.pi*max(r1,r2))
+            angres = 2*N.pi * (resolution / (2*N.pi*max(r1,r2)))
 
         # Make the circumferential points at the requested resolution.
         ang_end = 2*N.pi
