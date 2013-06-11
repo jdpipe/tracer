@@ -63,7 +63,7 @@ class TracerEngine():
                      # leaking rays. Why stack == 0 does not work? 
         
         # Raise an error if any of the parameters are negative
-        if (stack < 0).any():
+        if (stack < -sens).any():
             raise ValueError("Parameters must all be positive")
         
         # If parameter == 0, ray does not actually hit object, but originates from there; 

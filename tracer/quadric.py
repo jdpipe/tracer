@@ -73,7 +73,6 @@ class QuadricGM(GeometryManager):
         # Identify linear equations
         is_linear = A == 0
         is_quadric = ~is_linear
-
         # Identify specific B=0 case
         is_Bnull = B == 0
         is_not_Bnull = ~is_Bnull
@@ -82,10 +81,10 @@ class QuadricGM(GeometryManager):
         
         # Solve linear intersections        
         hits[:,is_linear] = N.tile(-C[is_linear]/B[is_linear], (2,1))
+        # Solve quadric specific situations (B = 0)
         hits[0,is_quadric & is_Bnull] = -N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
         hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])        
-
-        # Solve quadric intersections
+        # Solve quadric regular intersections
         q = -0.5*(B+N.sign(B)*delta)
         hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
         hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]

@@ -33,56 +33,57 @@ tr0 = translate(z=-f)
 P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], transform=tr0)
 A.add_object(P)
 
-# Cylinder
-#alpha3 = 0.5
-#tr = N.dot(rotx(N.pi), translate(z=-0.3))
-#CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(0.8, 0.8), Reflective(alpha3))], transform=tr)
-#A.add_object(CY1)
-
 # A beautiful thick, double frustum with 2 different sides. Still leaks.
-
 alpha2 = 0.5
 tr = N.dot(rotx(N.pi), translate(z=-0.3))
 width = 1e-10 # receiver thickness at frustii junction
-
+# 1st frustum
 CO1front = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), ReflectiveReceiver(alpha2))
 CO1back = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7+width), Reflective(alpha2))
 CO1 = AssembledObject(surfs=[CO1front,CO1back], transform=tr)
-
 CO1.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO1, CO1.__class__)
-
+# 2nd frustum
 CO2front = Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), ReflectiveReceiver(alpha2))
-CO2back = Surface(ConicalFrustum(z1=0,r1=0.7+width,z2=0.3,r2=0.4), ReflectiveReceiver(alpha2))
+CO2back = Surface(ConicalFrustum(z1=0,r1=0.7+width,z2=0.3,r2=0.4), Reflective(alpha2))
 CO2 = AssembledObject(surfs=[CO2front,CO2back], transform=tr)
-
 CO2.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO2, CO2.__class__)
-
+# add to general assembly
 A.add_object(CO1)
 A.add_object(CO2)
 
-# A target surface
-#rw = 1.
-#rh = 1.
-#R = AssembledObject(surfs=[Surface(RectPlateGM(rw,rh), LambertianReceiver(alpha))], transform=translate(0,0,f))
-#A.add_object(R)
-
-# do a raytrace
-cr = np.array([[0,0,2*f]]).T
+# A cylinder!
+CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1, height=1), AbsorberReflector(0.1))], transform=rotx(N.pi/2))
+#A.add_object(CY1)
+ 
+# Source definition
+cr = np.array([[0,0,f]]).T
 dr = np.array([0,0,-1])
 ar = 5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
-nrays = 10000 # number of rays escaping the source
+nrays = 1000 # number of rays escaping the source
 #TODO code in the Buie sunshape instead of a pillbox
 src = solar_disk_bundle(nrays, cr, dr, d*1., ar, G)
 
+# Raytrace!
 engine = TracerEngine(A)
-engine.ray_tracer(src, 100, 0.001)
+itmax = 1000 # stop iteration after this many ray bundles were generated (i.e. 
+            # after the original rays intersected some surface this many times).
+minener = 0.001 # minimum energy threshold
+engine.ray_tracer(src, itmax, minener)
 
 
-def show_rays(engine, escaping_len=20., highlight_level=None):
+'''
+__________________________________________________________________________________________________________________
+Rendering:
+
+Renders the scene. Offers the option to highlight specific rays according to the number of times they have been 
+reflected.
+__________________________________________________________________________________________________________________
+'''
+
+def show_rays(engine, escaping_len=5., highlight_level=None):
     """
     Function to draw the rays to a Coin3D scenegraph.
-    Adapted from ../tracer/mayavi/scene_view.py
     """
     tree = engine.tree
     no = coin.SoSeparator()
@@ -91,11 +92,12 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
     # loop through the reflection sequences?
     co = [] # regular lines
     co_h = [] # highlighted lines
+    pos = [] # 2D level text position
+    text = [] # 2D level text
     hist = {} # ray histories, for highlighted rays
+
     for level in xrange(tree.num_bunds()):
-        print "bundle",level
         start_rays = tree[level]
-        print "start_rays",start_rays.get_num_rays()
         sv = start_rays.get_vertices()
         sd = start_rays.get_directions()
         se = start_rays.get_energy()
@@ -109,8 +111,8 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
 
         # loop through individual rays in this bundle
         for ray in xrange(start_rays.get_num_rays()):
-            if se[ray] == 0:
-                # ignore rays with no starting energy
+            if se[ray] <= minener:
+                # ignore rays with starting energy smaller than energy cutoff
                 continue
             
             if ray in parents:
@@ -127,21 +129,18 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
                 c1 = sv[:,ray]
                 c2 = sv[:,ray] + sd[:,ray]*l
             if level == highlight_level:
+                # Highlight rays that have the highlight level set.
                 hist[ray] = tree.ray_history(ray,level)
                 co_h += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
             else:
                 co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
+            # Position and text of the level 2D text. ratio is the parameter of the text position on the ray.
+            # eg. 1/5 is equivalent to a text position at one fifth of the total ray length in the scene.
+            ratio = 1./5
+            c3 = ratio*(((1./ratio)-1.)*c1+c2)
+            pos += [(c3[0],c3[1],c3[2])]        
+            text.append(str(level))
 
-    #print "num of vertices",len(co)
-    #print "co_h",len(co_h)
-    #print "co",len(co)
-    #print "hist",hist
-
-    #print "ray history:"
-    #for i in hist:
-    #    detailed_ray_history(engine,hist[i])
-
-    # normal rays
     def plot_rays_color(co, color=(1,1,0.5)):
         """
         Add ray set of line color `color` to scenegraph `node`. Rays `co`
@@ -168,11 +167,42 @@ def show_rays(engine, escaping_len=20., highlight_level=None):
         ls.numVertices.setValues(0, len(ind), ind)
         no1.addChild(ls)
 
-        return no1;
+        return no1
+
+    def plot_level_number(text_pos, level_number):
+        """
+        Shows the number of reflections a ray has had as a 2D text on the scene.
+        Arguments:
+        text_pos - the position of the 2D text over the ray
+        level_number - the number of reflections already encountered by the ray according to ray history.
+        """
+        no2 = coin.SoSeparator()
+             
+        tr = coin.SoTransform()
+        tr.translation.setValue(text_pos)
+        no2.addChild(tr)
+
+        fo = coin.SoFont()
+        fo.name.setValue("Arial-Bold")
+        fo.size.setValue(15)
+        no2.addChild(fo)   
+
+        ma2 = coin.SoMaterial()
+        ma2.diffuseColor.setValue(1,0,1)
+        no2.addChild(ma2) 
+
+        tx = coin.SoText2()      
+        tx.string = level_number        
+        no2.addChild(tx)
+                
+        return no2       
     
     no.addChild(plot_rays_color(co))
     no.addChild(plot_rays_color(co_h, color=(1,1,1)))
-
+    num = len(text)    
+    for i in range(num):
+        no.addChild(plot_level_number(pos[i], text[i]))
+    
     return no
 
 def detailed_ray_history(engine,seq):
@@ -190,7 +220,7 @@ def detailed_ray_history(engine,seq):
         print "...from",bund.get_vertices()[:,ray]
         print "...direction",bund.get_directions()[:,ray]
 
-def axis_labels(length=10):
+def axis_labels(length=1):
     """
     Create axis arrows/labels for addition to a Coin3D scenegraph.
     """
@@ -221,11 +251,11 @@ def axis_labels(length=10):
         r.addChild(ls)
     return r
 
-
 # render the scene with Pivy
 r = coin.SoSeparator()
+
 r.addChild(axis_labels())
-r.addChild(show_rays(engine, highlight_level=2))
+r.addChild(show_rays(engine, highlight_level=None))
 r.addChild(A.get_scene_graph())
 
 win = SoGui.init("hello")
@@ -237,6 +267,3 @@ viewer.show()
 
 SoGui.show(win)
 SoGui.mainLoop()
-
-
-# vim: et:ts=4

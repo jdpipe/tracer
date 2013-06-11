@@ -13,6 +13,25 @@ import numpy as N
 from .ray_bundle import RayBundle
 from .spatial_geometry import rotation_to_z
 
+def single_ray_source(position, direction, flux=None):
+    '''
+    Establishes a single ray source originating from a definned point on a defined exact 
+    direction for the purpose of testing single ray behviours.
+
+    Arguments:
+    position - column 3-array with the ray's starting position.
+    direction - a 1D 3-array with the unit average direction vector for the
+                bundle.
+    flux - if not None, the energy transported by the ray.
+
+    Returns:
+    A Raybundle object with the corresponding characteristics.
+    '''
+    directions = N.tile(direction[:,None],1)
+    singray = RayBundle(vertices = position, directions = directions)
+    singray.set_energy(flux*N.ones(1))
+    return singray
+
 def pillbox_sunshape_directions(num_rays, ang_range):
     """
     Calculates directions for a ray bundles with ``num_rays`` rays, distributed
@@ -29,7 +48,7 @@ def pillbox_sunshape_directions(num_rays, ang_range):
         ray, distributed to match a pillbox sunshape.
     """
     # Diffuse divergence from +Z:
-    # development bassed on eq. 2.12  from [1]
+    # development based on eq. 2.12  from [1]
     xi1 = random.uniform(high=2*N.pi, size=num_rays)
     xi2 = random.uniform(size=num_rays)
     theta = N.arcsin(N.sin(ang_range)*N.sqrt(xi2))
@@ -55,7 +74,7 @@ def solar_disk_bundle(num_rays,  center,  direction,  radius,  ang_range, flux=N
         an equal amount of energy, and the total energy is flux*pi*radius**2
     
     Returns: 
-    A RayBundle object with the above charachteristics set.
+    A RayBundle object with the above characteristics set.
     """
 
 	# FIXME why should 'center' be a column vector... that's just annoying.

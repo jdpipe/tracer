@@ -72,7 +72,7 @@ class InfiniteCone(QuadricGM):
 
         return A, B, C
 
-class Cone(InfiniteCone):
+class FiniteCone(InfiniteCone):
     # FIXME TODO add support for apex not at z=0
     """
     Implements a finite cone. Parameters are r (base radius) and h (cone
@@ -166,7 +166,7 @@ class ConicalFrustum(InfiniteCone):
 
         Arguments:
         coords - a 2 by 3 by n array whose each column is the global coordinates
-            of one intersection point of a ray with the sphere.
+            of one intersection point of a ray with the surface.
         prm - a 2 by n array (CHECK THIS) giving the parametric location on the
             ray where the intersection occurs.
 
