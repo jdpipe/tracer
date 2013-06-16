@@ -91,7 +91,7 @@ class FiniteCylinder(InfiniteCylinder):
         positive = prm > 0
         
         hitting = inside & positive
-        select[N.logical_and(*hitting)] = 0
+        select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
 

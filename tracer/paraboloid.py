@@ -185,7 +185,7 @@ class HexagonalParabolicDishGM(Paraboloid):
         abs_y = abs(local[:,1,:])
         outside = abs_x > math.sqrt(3)*self._R/2.
         outside |= abs_y > self._R - math.tan(N.pi/6.)*abs_x
-        inside = (~outside) & (prm > 0)
+        inside = (~outside) & (prm > 1e-9)
         
         select[~N.logical_or(*inside)] = N.nan
         one_hit = N.logical_xor(*inside)

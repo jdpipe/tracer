@@ -22,8 +22,8 @@ class InfiniteCone(QuadricGM):
         a - position of cone apex on z axis
         """ 
         QuadricGM.__init__(self)
-        self.c = c
-        self.a = a
+        self.c = float(c)
+        self.a = float(a)
 
     def _normals(self, hits, directs):
         """
@@ -40,16 +40,14 @@ class InfiniteCone(QuadricGM):
             N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
 
-        # Partial derivation of the 'hit' equations        
+        # Partial derivation of the 'hit' equations <=> normal directions       
         partial_x = 2*hit[0]
         partial_y = 2*hit[1]
         partial_z = -2*self.c**2*(hit[2] - self.a)        
-
-        #FIXME check what happens with inside and outside reflections?
-
+        # Build local unit normal vector
         local_normal = N.vstack((partial_x, partial_y, partial_z))
         local_unit = local_normal/N.sqrt(N.sum(local_normal**2, axis=0))
-
+        # Identify the direction of the normal considering the incident direction of the ray. 
         down = N.sum(dir_loc * local_unit, axis=0) > 0
         local_unit[:,down] *= -1
         normals = N.dot(self._working_frame[:3,:3], local_unit)
@@ -83,8 +81,8 @@ class FiniteCone(InfiniteCone):
     def __init__(self, r, h):
         if h < 0 or r < 0:
             raise AttributeError
-        self.h = h
-        self.r = r
+        self.h = float(h)
+        self.r = float(r)
         InfiniteCone.__init__(self, r/h)
     
     def _select_coords(self, coords, prm):
@@ -108,7 +106,7 @@ class FiniteCone(InfiniteCone):
         # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
-            
+        
         inside = (height >= 0) & (height <= self.h)
         positive = prm > 0
 
@@ -152,8 +150,8 @@ class ConicalFrustum(InfiniteCone):
         if z1 > z2:
             raise AttributeError
 
-        c = float(r2 - r1)/(z2 - z1)
-        a = float(r2*z1 - r1*z2) / (r2 - r1)
+        c = float((r2 - r1)/(z2 - z1))
+        a = float((r2*z1 - r1*z2) / (r2 - r1))
         InfiniteCone.__init__(self, c=c, a=a)
         self.z1 = float(z1)
         self.z2 = float(z2)
@@ -175,16 +173,16 @@ class ConicalFrustum(InfiniteCone):
         """
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
-
+        # Projects the hit coordinates in a local frame on the z axis.
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
-
+        # Checks if the local_z-projected hit coords are in the actual height of the furstum.
         inside = (self.z1 <= height) & (height <= self.z2)
 
         positive = prm > 0
-
         hitting = inside & positive
-        select[N.logical_and(*hitting)] = 0
+        
+        select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
 

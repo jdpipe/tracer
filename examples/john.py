@@ -22,11 +22,18 @@ import pivy.coin as coin
 SOGUI_BINDING="SoQt"
 from pivy.sogui import *
 
+'''
+_________________________________________________________________________________________________________________
+John.py:
+
+Test on cavity geometry using 2 frustii.
+_________________________________________________________________________________________________________________
+'''
 
 A = Assembly()
 
 # Paraboloidal dish...
-alpha = 0 # dish absorptivity
+alpha = 0.1 # dish absorptivity
 d = 22 # dish diameter
 f = 13.4 # dish focal length
 tr0 = translate(z=-f)
@@ -34,16 +41,16 @@ P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], t
 A.add_object(P)
 
 # A beautiful thick, double frustum with 2 different sides. Still leaks.
-alpha2 = 0.5
+alpha2 = 0.9
 tr = N.dot(rotx(N.pi), translate(z=-0.3))
-width = 1e-10 # receiver thickness at frustii junction
+width = 0.001 # receiver thickness at frustii junction
 # 1st frustum
-CO1front = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), ReflectiveReceiver(alpha2))
-CO1back = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7+width), Reflective(alpha2))
+CO1front = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), Reflective(alpha2))
+CO1back = Surface(ConicalFrustum(z1=-0.5,r1=0.01+width,z2=0,r2=0.7), Reflective(alpha2))
 CO1 = AssembledObject(surfs=[CO1front,CO1back], transform=tr)
 CO1.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO1, CO1.__class__)
 # 2nd frustum
-CO2front = Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), ReflectiveReceiver(alpha2))
+CO2front = Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), Reflective(alpha2))
 CO2back = Surface(ConicalFrustum(z1=0,r1=0.7+width,z2=0.3,r2=0.4), Reflective(alpha2))
 CO2 = AssembledObject(surfs=[CO2front,CO2back], transform=tr)
 CO2.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO2, CO2.__class__)
@@ -56,17 +63,17 @@ CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1, height=1), Absor
 #A.add_object(CY1)
  
 # Source definition
-cr = np.array([[0,0,f]]).T
+cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
-ar = 5e-3 # radians, sun rays angular range (what's the correct value?)
+ar = 4.5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
-nrays = 1000 # number of rays escaping the source
+nrays = 100000 # number of rays escaping the source
 #TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(nrays, cr, dr, d*1., ar, G)
+src = solar_disk_bundle(nrays, cr, dr, d*0.6, ar, G)
 
 # Raytrace!
 engine = TracerEngine(A)
-itmax = 1000 # stop iteration after this many ray bundles were generated (i.e. 
+itmax = 100 # stop iteration after this many ray bundles were generated (i.e. 
             # after the original rays intersected some surface this many times).
 minener = 0.001 # minimum energy threshold
 engine.ray_tracer(src, itmax, minener)
@@ -92,8 +99,8 @@ def show_rays(engine, escaping_len=5., highlight_level=None):
     # loop through the reflection sequences?
     co = [] # regular lines
     co_h = [] # highlighted lines
-    pos = [] # 2D level text position
-    text = [] # 2D level text
+    #pos = [] # 2D level text position
+    #text = [] # 2D level text
     hist = {} # ray histories, for highlighted rays
 
     for level in xrange(tree.num_bunds()):
@@ -136,10 +143,10 @@ def show_rays(engine, escaping_len=5., highlight_level=None):
                 co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
             # Position and text of the level 2D text. ratio is the parameter of the text position on the ray.
             # eg. 1/5 is equivalent to a text position at one fifth of the total ray length in the scene.
-            ratio = 1./5
-            c3 = ratio*(((1./ratio)-1.)*c1+c2)
-            pos += [(c3[0],c3[1],c3[2])]        
-            text.append(str(level))
+            #ratio = 1./5
+            #c3 = ratio*(((1./ratio)-1.)*c1+c2)
+            #pos += [(c3[0],c3[1],c3[2])]        
+            #text.append(str(level))
 
     def plot_rays_color(co, color=(1,1,0.5)):
         """
@@ -167,41 +174,13 @@ def show_rays(engine, escaping_len=5., highlight_level=None):
         ls.numVertices.setValues(0, len(ind), ind)
         no1.addChild(ls)
 
-        return no1
-
-    def plot_level_number(text_pos, level_number):
-        """
-        Shows the number of reflections a ray has had as a 2D text on the scene.
-        Arguments:
-        text_pos - the position of the 2D text over the ray
-        level_number - the number of reflections already encountered by the ray according to ray history.
-        """
-        no2 = coin.SoSeparator()
-             
-        tr = coin.SoTransform()
-        tr.translation.setValue(text_pos)
-        no2.addChild(tr)
-
-        fo = coin.SoFont()
-        fo.name.setValue("Arial-Bold")
-        fo.size.setValue(15)
-        no2.addChild(fo)   
-
-        ma2 = coin.SoMaterial()
-        ma2.diffuseColor.setValue(1,0,1)
-        no2.addChild(ma2) 
-
-        tx = coin.SoText2()      
-        tx.string = level_number        
-        no2.addChild(tx)
-                
-        return no2       
+        return no1 
     
     no.addChild(plot_rays_color(co))
     no.addChild(plot_rays_color(co_h, color=(1,1,1)))
-    num = len(text)    
-    for i in range(num):
-        no.addChild(plot_level_number(pos[i], text[i]))
+    #num = len(text)    
+    #for i in range(num):
+    #    no.addChild(plot_level_number(pos[i], text[i]))
     
     return no
 

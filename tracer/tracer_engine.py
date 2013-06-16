@@ -48,29 +48,31 @@ class TracerEngine():
         
         # Bounce rays off each object
         for surf_num in xrange(len(surfaces)):
+            # Elements of owned_rays[surfnum] set to 1 if (rays dont own any surface or rays own the actual surface) and the surface is relevant to these rays.
             owned_rays[surf_num] = ((ray_ownership == -1) | \
                 (ray_ownership == surf_ownership[surf_num])) & surf_relevancy[surf_num]
+            # If no ray is owned, skip the rest nad build the stack
             if not owned_rays[surf_num].any():
                 continue
+            # If some rays are not owned, in_rays inherits the owned_rays from where they come
             if (~owned_rays[surf_num]).any():
                 in_rays = bundle.inherit(owned_rays[surf_num])
+               # the remaining rays (not-owned_rays) stay as in the actual bundle
             else:
                 in_rays = bundle
+            # Fills the stack assigning rays to surfaces hit.
             stack[surf_num, owned_rays[surf_num]] = \
                 surfaces[surf_num].register_incoming(in_rays)
-
-        sens = 1e-10 # stack sensibility cutoff parameter; seems to have an influence on 
-                     # leaking rays. Why stack == 0 does not work? 
         
         # Raise an error if any of the parameters are negative
-        if (stack < -sens).any():
+        if (stack < 0).any():
             raise ValueError("Parameters must all be positive")
         
         # If parameter == 0, ray does not actually hit object, but originates from there; 
-        # so it should be ignored in considering intersections          
+        # so it should be ignored in considering intersections.
       
-        if (stack <= sens).any():
-            zeros = N.where(stack <= sens)
+        if (stack == 0).any():
+            zeros = N.where(stack == 0)
             stack[zeros] = N.inf
 
         # Find the smallest parameter for each ray, and use that as the final one,
@@ -165,8 +167,8 @@ class TracerEngine():
                 # of the full list of surfaces must be checked next. This is
                 # somewhat memory-intensize and requires optimization.
                 surf_relev = N.ones((num_surfs, new_outg.get_num_rays()), dtype=N.bool)
-                surf_relev[surf_ownership == obj_idx] = \
-                    objects[obj_idx].surfaces_for_next_iteration(new_outg, surf_rel_idx)
+                #surf_relev[surf_ownership == obj_idx] = \
+                #    objects[obj_idx].surfaces_for_next_iteration(new_outg, surf_rel_idx)
                 new_surfs_relevancy.append(surf_relev)
             
             bund = concatenate_rays(outg)

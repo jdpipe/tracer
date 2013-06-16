@@ -71,10 +71,10 @@ class QuadricGM(GeometryManager):
         delta = N.sqrt(delta[any_inters])
 
         # Identify linear equations
-        is_linear = A == 0
+        is_linear = A == 0.
         is_quadric = ~is_linear
         # Identify specific B=0 case
-        is_Bnull = B == 0
+        is_Bnull = B == 0.
         is_not_Bnull = ~is_Bnull
         
         hits = N.empty((2, num_inters))
@@ -88,7 +88,9 @@ class QuadricGM(GeometryManager):
         q = -0.5*(B+N.sign(B)*delta)
         hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
         hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]
-                    
+        
+        hits = N.round_(hits, decimals = 9)        
+              
         # Get intersection coordinates using rays parameters
         inters_coords = v[:,any_inters] + d[:,any_inters]*hits.reshape(2,1,-1)
         
@@ -134,7 +136,7 @@ class QuadricGM(GeometryManager):
         select[~N.logical_or(*is_positive)] = N.nan
         
         # If both are positive, use the smaller one
-        select[N.logical_and(*is_positive)] = 0
+        select[N.logical_and(*is_positive)] = 1
         
         # If either one is negative, use the positive one
         one_pos = N.logical_xor(*is_positive)
