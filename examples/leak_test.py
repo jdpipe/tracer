@@ -34,7 +34,7 @@ alpha1 = 0.8
 CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), Reflective(alpha1))], transform = rotx(N.pi/2))
 A.add_object(CYL)
 # Cone
-CON = AssembledObject(surfs=[Surface(FiniteCone(r=1,h=1), Reflective(alpha1))], transform = N.dot(rotx(N.pi/2), translate(x=5, z=-1)))
+CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), Reflective(alpha1))], transform = N.dot(rotx(N.pi/2), translate(x=5, z=-1)))
 A.add_object(CON)
 # Frustum
 FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), Reflective(alpha1))], transform = translate(x=10))
@@ -76,7 +76,7 @@ srcs.append(srcc5)
 centerc6 = np.array([[3,3,0]]).T
 directc6 = np.array([-1,-1,0])
 srcc6 = single_ray_source(centerc6, directc6, G)
-#srcs.append(srcc6)
+srcs.append(srcc6)
 # Cylinder Source 7:
 centerc7 = np.array([[-0.2,0.2,3]]).T
 directc7 = np.array([0,0,-1])
@@ -90,8 +90,8 @@ srcs.append(srcc8)
   
 # FiniteCone sources:
 # FiniteCone Source 1:
-centerco1 = np.array([[5,3,0]]).T
-directco1 = np.array([0,-1,0])
+centerco1 = np.array([[5,-3,0]]).T
+directco1 = np.array([0,1,0])
 srcco1 = single_ray_source(centerco1, directco1, G)
 srcs.append(srcco1)
 # FiniteCone Source 2:
@@ -110,8 +110,8 @@ directco4 = np.array([0,-1,0])
 srcco4 = single_ray_source(centerco4, directco4, G)
 srcs.append(srcco4) 
 # FiniteCone Source 5:
-centerco5 = np.array([[5,3,0]]).T
-directco5 = np.array([0,-1,0])
+centerco5 = np.array([[6,1.9,0]]).T
+directco5 = np.array([-1,-1,0])
 srcco5 = single_ray_source(centerco5, directco5, G)
 srcs.append(srcco5)
 # FiniteCone Source 6:

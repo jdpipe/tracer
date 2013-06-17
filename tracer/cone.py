@@ -17,7 +17,8 @@ class InfiniteCone(QuadricGM):
         a - position of cone apex on z axis
         
         Cone equation is x**2 + y**2 = (c*(z-a))**2
-        Private attributes:                                                                  
+        
+        Private attributes:                                                      
         c - cone gradient (r/h)
         a - position of cone apex on z axis
         """ 
@@ -36,10 +37,8 @@ class InfiniteCone(QuadricGM):
         """
         # Transform the position and directions of the hits temporarily in the frame of 
         # the geometry for calculations       
-        hit = N.dot(N.linalg.inv(self._working_frame), 
-            N.vstack((hits.T, N.ones(hits.shape[0]))))
+        hit = N.dot(N.linalg.inv(self._working_frame), N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
-
         # Partial derivation of the 'hit' equations <=> normal directions       
         partial_x = 2*hit[0]
         partial_y = 2*hit[1]
@@ -47,9 +46,13 @@ class InfiniteCone(QuadricGM):
         # Build local unit normal vector
         local_normal = N.vstack((partial_x, partial_y, partial_z))
         local_unit = local_normal/N.sqrt(N.sum(local_normal**2, axis=0))
-        # Identify the direction of the normal considering the incident direction of the ray. 
+        # Identify the orientation of the normal considering the incident orientation of the 
+        # ray. Treat the specific case of the apex setting the normal to be
+        # -1*dir_loc at that point.
         down = N.sum(dir_loc * local_unit, axis=0) > 0
+        apex = hit[2] == self.a
         local_unit[:,down] *= -1
+        local_unit[:,apex] = -1*dir_loc[:,apex]
         normals = N.dot(self._working_frame[:3,:3], local_unit)
         
         return normals  
@@ -80,10 +83,11 @@ class FiniteCone(InfiniteCone):
     """
     def __init__(self, r, h):
         if h < 0 or r < 0:
-            raise AttributeError
+            raise AttributeError      
         self.h = float(h)
         self.r = float(r)
-        InfiniteCone.__init__(self, r/h)
+        c = self.r/self.h        
+        InfiniteCone.__init__(self, c=c)
     
     def _select_coords(self, coords, prm):
         """
@@ -103,14 +107,12 @@ class FiniteCone(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        # FIXME CHECK THIS...
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         
         inside = (height >= 0) & (height <= self.h)
         positive = prm > 0
 
-        # Assumption here seems to be that the first-given of each 'hit' is the nearer one -- JP
         hitting = inside & positive
         select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
@@ -118,23 +120,38 @@ class FiniteCone(InfiniteCone):
 
         return select
     
-    def get_scene_graph(self, resolution = None):
-        n = coin.SoSeparator()
-        ro = coin.SoRotationXYZ()
-        ro.axis = coin.SoRotationXYZ.X
-        ro.angle = -N.pi / 2.
-        n.addChild(ro)
-        tr = coin.SoTranslation()
-        tr.translation = (0,-self.h/2.,0)
-        n.addChild(tr)
-        co = coin.SoCone()
-        co.bottomRadius = self.r
-        # NOTE FOR LATER: to render the inside of the cone, we can set co.height < 0
-        co.height = self.h
-        co.parts = co.SIDES
-        n.addChild(co)
-        return n
+    def mesh(self, resolution=None):
+        """
+        Represent the surface as a mesh in local coordinates. Uses polar
+        bins, i.e. the points are equally distributed by angle and radius,
+        not by x,y.
+        
+        Arguments:
+        resolution - in points per unit length (so the number of points 
+            returned is O(A*resolution**2) for area A)
+        
+        Returns:
+        x, y, z - each a 2D array holding in its (i,j) cell the x, y, and z
+            coordinate (respectively) of point (i,j) in the mesh.
+        """
+        # Generate a circular-edge mesh using polar coordinates.    
+        rc = self.c * (self.h - self.a)
+        rs = N.r_[0,rc]
 
+        if resolution is None:
+            angres = 2*N.pi / 40
+        else:
+            angres = 2*N.pi * (resolution / 2*N.pi*rc)
+
+        # Make the circumferential points at the requested resolution.
+        ang_end = 2*N.pi
+        angs = N.r_[0:ang_end+angres:angres]
+
+        x = N.outer(rs, N.cos(angs))
+        y = N.outer(rs, N.sin(angs))
+        z = self.a + 1/self.c * N.sqrt(x**2 + y**2)
+
+        return x, y, z      
 
 class ConicalFrustum(InfiniteCone):
     # FIXME Must z1 > z2?? Test both cases. Especially normals.
@@ -176,12 +193,12 @@ class ConicalFrustum(InfiniteCone):
         # Projects the hit coordinates in a local frame on the z axis.
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
-        # Checks if the local_z-projected hit coords are in the actual height of the furstum.
+        # Checks if the local_z-projected hit coords are in the actual height of the furstum
+        # and if the parameter is positive so that the ray goes ahead.
         inside = (self.z1 <= height) & (height <= self.z2)
-
         positive = prm > 0
         hitting = inside & positive
-        
+        # Choses between the two intersections offered by the surface.
         select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]

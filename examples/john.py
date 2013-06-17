@@ -1,4 +1,3 @@
-
 import numpy as np
 import pylab
 np.set_printoptions(linewidth=140)
@@ -17,6 +16,7 @@ from tracer.sources import *
 from tracer.tracer_engine import *
 from tracer.models.one_sided_mirror import *
 import types
+import time
 
 import pivy.coin as coin
 SOGUI_BINDING="SoQt"
@@ -29,6 +29,7 @@ John.py:
 Test on cavity geometry using 2 frustii.
 _________________________________________________________________________________________________________________
 '''
+t0 = time.clock()
 
 A = Assembly()
 
@@ -78,6 +79,8 @@ itmax = 100 # stop iteration after this many ray bundles were generated (i.e.
 minener = 0.001 # minimum energy threshold
 engine.ray_tracer(src, itmax, minener)
 
+t1 = time.clock()-t0
+print 'Raytrace calculation time: ', t1
 
 '''
 __________________________________________________________________________________________________________________
@@ -245,4 +248,9 @@ viewer.viewAll()
 viewer.show()
 
 SoGui.show(win)
+
+t2 = time.clock()-t1
+print 'Rendering calculation time: ', t2
+print 'Total runtime: ', t2+t1
+
 SoGui.mainLoop()

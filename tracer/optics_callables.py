@@ -31,6 +31,31 @@ class Reflective(object):
 
 perfect_mirror = Reflective(0)
 
+class RealReflective(object):
+    '''
+    Generates a function that represents the optique of an opaque absorptive surface with specular reflections and realistic shape error.
+
+    Arguments:
+    absorptivity - the amount of energy absorbed before reflection
+    sigma_x - Standard deviation of the reflected ray in the local x direction
+    sigma_y - Standard deviation of the reflected ray in the local y direction
+
+    Returns:
+    Reflective - a function with the signature required by surface
+    '''
+    def __init__(self, absorptivity, sigma_x, sigma_y):
+        self._abs = absorptivity
+        self.sig_x = sigma_x
+        self.sig_y = sigma_y
+
+    def __call__(self, geometry, rays, selector):
+        # TODO Create new normals using the geometry and adding shape error to it.
+        real_normals = geometry.get_normals()
+        # Call reflective optics with the new set of normals to get reflections affected by 
+        # shape error.
+        outg = rays.inherit(selector,vertices=geometry.get_intersection_points_global(),         direction=optics.reflections(rays.get_directions()[:,selector], real_normals),           energy=rays.get_energy()[selector]*(1 - self._abs), parents=selector)
+        return outg
+
 class AbsorptionAccountant(object):
     """
     This optics manager remembers all of the locations where rays hit it

@@ -83,7 +83,7 @@ class QuadricGM(GeometryManager):
         hits[:,is_linear] = N.tile(-C[is_linear]/B[is_linear], (2,1))
         # Solve quadric specific situations (B = 0)
         hits[0,is_quadric & is_Bnull] = -N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
-        hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])        
+        hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
         # Solve quadric regular intersections
         q = -0.5*(B+N.sign(B)*delta)
         hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
@@ -134,10 +134,8 @@ class QuadricGM(GeometryManager):
         # If both are negative, it is a miss
         # This line also catches the cases of the last xor.
         select[~N.logical_or(*is_positive)] = N.nan
-        
         # If both are positive, use the smaller one
         select[N.logical_and(*is_positive)] = 1
-        
         # If either one is negative, use the positive one
         one_pos = N.logical_xor(*is_positive)
         select[one_pos] = N.nonzero(is_positive.T[one_pos,:])[1]
