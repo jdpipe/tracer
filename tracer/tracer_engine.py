@@ -51,7 +51,7 @@ class TracerEngine():
             # Elements of owned_rays[surfnum] set to 1 if (rays dont own any surface or rays own the actual surface) and the surface is relevant to these rays.
             owned_rays[surf_num] = ((ray_ownership == -1) | \
                 (ray_ownership == surf_ownership[surf_num])) & surf_relevancy[surf_num]
-            # If no ray is owned, skip the rest nad build the stack
+            # If no ray is owned, skip the rest and build the stack
             if not owned_rays[surf_num].any():
                 continue
             # If some rays are not owned, in_rays inherits the owned_rays from where they come

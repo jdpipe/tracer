@@ -93,7 +93,7 @@ srcs.append(srcc8)
 centerco1 = np.array([[5,-3,0]]).T
 directco1 = np.array([0,1,0])
 srcco1 = single_ray_source(centerco1, directco1, G)
-srcs.append(srcco1)
+#srcs.append(srcco1)
 # FiniteCone Source 2:
 centerco2 = np.array([[5,0.3,3]]).T
 directco2 = np.array([0,0,-1])
@@ -110,13 +110,13 @@ directco4 = np.array([0,-1,0])
 srcco4 = single_ray_source(centerco4, directco4, G)
 srcs.append(srcco4) 
 # FiniteCone Source 5:
-centerco5 = np.array([[6,1.9,0]]).T
-directco5 = np.array([-1,-1,0])
+centerco5 = np.array([[5,2,0]]).T
+directco5 = np.array([0,-1,0])
 srcco5 = single_ray_source(centerco5, directco5, G)
 srcs.append(srcco5)
 # FiniteCone Source 6:
-centerco6 = np.array([[4.8,0.3,3]]).T
-directco6 = np.array([0,0,-1])
+centerco6 = np.array([[6,6,0]]).T
+directco6 = np.array([-0.2,-1,0])
 srcco6 = single_ray_source(centerco6, directco6, G)
 srcs.append(srcco6)
 # FiniteCone Source 7:

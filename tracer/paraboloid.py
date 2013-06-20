@@ -99,16 +99,19 @@ class ParabolicDishGM(Paraboloid):
         Returns:
         The index of the selected intersection, or None if neither will do.
         """
-        select = QuadricGM._select_coords(self, coords, prm) # defaults
+        select = N.empty(prm.shape[1])
+        select.fill(N.nan)
+
+        positive = prm > 0
         
         coords = N.concatenate((coords, N.ones((2,1,coords.shape[2]))), axis=1)
         local_z = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             coords, axis=1)
         under_cut = (local_z <= self._h) & (prm > 0)
-
-        select[~N.logical_or(*under_cut)] = N.nan
-        one_hit = N.logical_xor(*under_cut)
-        select[one_hit] = N.nonzero(under_cut.T[one_hit,:])[1]
+        hitting = under_cut & positive
+        select[N.logical_and(*hitting)] = 1
+        one_hitting = N.logical_xor(*hitting)
+        select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
 
         return select
     

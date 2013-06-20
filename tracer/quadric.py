@@ -130,10 +130,8 @@ class QuadricGM(GeometryManager):
         """
         is_positive = prm > 0
         select = N.empty(prm.shape[1])
+        select.fill(N.nan)
 
-        # If both are negative, it is a miss
-        # This line also catches the cases of the last xor.
-        select[~N.logical_or(*is_positive)] = N.nan
         # If both are positive, use the smaller one
         select[N.logical_and(*is_positive)] = 1
         # If either one is negative, use the positive one

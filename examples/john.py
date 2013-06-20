@@ -38,11 +38,12 @@ alpha = 0.1 # dish absorptivity
 d = 22 # dish diameter
 f = 13.4 # dish focal length
 tr0 = translate(z=-f)
-P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(alpha))], transform=tr0)
+#P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(absorptivity=alpha))], transform=tr0)
+P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), RealReflective(absorptivity=alpha, sigma_xy=6e-3))], transform=tr0)
 A.add_object(P)
 
 # A beautiful thick, double frustum with 2 different sides. Still leaks.
-alpha2 = 0.9
+alpha2 = 0.5
 tr = N.dot(rotx(N.pi), translate(z=-0.3))
 width = 0.001 # receiver thickness at frustii junction
 # 1st frustum
@@ -68,7 +69,7 @@ cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
 ar = 4.5e-3 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
-nrays = 100000 # number of rays escaping the source
+nrays = 10000 # number of rays escaping the source
 #TODO code in the Buie sunshape instead of a pillbox
 src = solar_disk_bundle(nrays, cr, dr, d*0.6, ar, G)
 
@@ -91,7 +92,7 @@ reflected.
 __________________________________________________________________________________________________________________
 '''
 
-def show_rays(engine, escaping_len=5., highlight_level=None):
+def show_rays(engine, escaping_len=15., highlight_level=None):
     """
     Function to draw the rays to a Coin3D scenegraph.
     """
@@ -134,7 +135,7 @@ def show_rays(engine, escaping_len=5., highlight_level=None):
             else:
                 l = escaping_len
                 if level == 0:
-                    l = 0.1
+                    l = 0.5
                 # Escaping ray.
                 c1 = sv[:,ray]
                 c2 = sv[:,ray] + sd[:,ray]*l
@@ -254,3 +255,4 @@ print 'Rendering calculation time: ', t2
 print 'Total runtime: ', t2+t1
 
 SoGui.mainLoop()
+

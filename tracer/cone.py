@@ -50,9 +50,9 @@ class InfiniteCone(QuadricGM):
         # ray. Treat the specific case of the apex setting the normal to be
         # -1*dir_loc at that point.
         down = N.sum(dir_loc * local_unit, axis=0) > 0
-        apex = hit[2] == self.a
-        local_unit[:,down] *= -1
-        local_unit[:,apex] = -1*dir_loc[:,apex]
+        apex = (hit[2] == self.a)
+        local_unit[:,down] *= -1  
+        local_unit[:,apex] = N.vstack((0,0,-1))
         normals = N.dot(self._working_frame[:3,:3], local_unit)
         
         return normals  
