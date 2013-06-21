@@ -23,8 +23,7 @@ class Reflective(object):
     def __call__(self, geometry, rays, selector):
         outg = rays.inherit(selector,
             vertices=geometry.get_intersection_points_global(),
-            direction=optics.reflections(
-                rays.get_directions()[:,selector], geometry.get_normals()),
+            direction=optics.reflections(rays.get_directions()[:,selector], geometry.get_normals()),
             energy=rays.get_energy()[selector]*(1 - self._abs),
             parents=selector)
         return outg
@@ -44,19 +43,25 @@ class RealReflective(object):
     '''
     def __init__(self, absorptivity, sigma_xy):
         self._abs = absorptivity
-        self.sig = sigma_xy
+        self.sig = float(sigma_xy)
 
     def __call__(self, geometry, rays, selector):
         ideal_normals = geometry.get_normals()
-        
-        normal_errors_x = N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1]))
-        normal_errors_y = N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1]))
-        normal_errors = N.vstack((normal_errors_x, normal_errors_y, N.zeros(N.shape(ideal_normals[1]))))
+        # Creates projection of error_normal on the surface (sin can be avoided because of very small angles).
+        normal_errors_x = N.sin(N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1])))
+        normal_errors_y = N.sin(N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1])))
+        normal_errors_z = N.zeros(N.shape(ideal_normals[1]))
+        # Build the normal_error vectors in the local frame.
+        normal_errors = N.dot(geometry._working_frame[:3,:3], N.vstack((normal_errors_x, normal_errors_y, normal_errors_z)))
         real_normals = ideal_normals + normal_errors
         real_normals_unit = real_normals/N.sqrt(N.sum(real_normals**2, axis=0))
         # Call reflective optics with the new set of normals to get reflections affected by 
         # shape error.
-        outg = rays.inherit(selector,vertices=geometry.get_intersection_points_global(),         direction=optics.reflections(rays.get_directions()[:,selector], real_normals_unit),           energy=rays.get_energy()[selector]*(1 - self._abs), parents=selector)
+        outg = rays.inherit(selector,
+            vertices = geometry.get_intersection_points_global(),
+            direction = optics.reflections(rays.get_directions()[:,selector], real_normals_unit),
+            energy = rays.get_energy()[selector]*(1 - self._abs),
+            parents = selector)
         return outg
 
 class AbsorptionAccountant(object):

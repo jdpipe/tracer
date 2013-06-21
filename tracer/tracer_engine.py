@@ -61,8 +61,7 @@ class TracerEngine():
             else:
                 in_rays = bundle
             # Fills the stack assigning rays to surfaces hit.
-            stack[surf_num, owned_rays[surf_num]] = \
-                surfaces[surf_num].register_incoming(in_rays)
+            stack[surf_num, owned_rays[surf_num]] = surfaces[surf_num].register_incoming(in_rays)
         
         # Raise an error if any of the parameters are negative
         if (stack < 0).any():
@@ -71,8 +70,8 @@ class TracerEngine():
         # If parameter == 0, ray does not actually hit object, but originates from there; 
         # so it should be ignored in considering intersections.
       
-        if (stack == 0).any():
-            zeros = N.where(stack == 0)
+        if (stack <= 1e-9).any():
+            zeros = N.where(stack <= 1e-9)
             stack[zeros] = N.inf
 
         # Find the smallest parameter for each ray, and use that as the final one,

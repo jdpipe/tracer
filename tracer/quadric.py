@@ -88,7 +88,7 @@ class QuadricGM(GeometryManager):
         q = -0.5*(B+N.sign(B)*delta)
         hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
         hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]
-        
+        # Rounds parameters results to get 0 where it's a 0.
         hits = N.round_(hits, decimals = 9)        
               
         # Get intersection coordinates using rays parameters

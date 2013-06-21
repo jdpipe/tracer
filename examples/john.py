@@ -39,7 +39,7 @@ d = 22 # dish diameter
 f = 13.4 # dish focal length
 tr0 = translate(z=-f)
 #P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(absorptivity=alpha))], transform=tr0)
-P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), RealReflective(absorptivity=alpha, sigma_xy=6e-3))], transform=tr0)
+P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), RealReflective(absorptivity=alpha, sigma_xy=4e-3))], transform=tr0)
 A.add_object(P)
 
 # A beautiful thick, double frustum with 2 different sides. Still leaks.
@@ -67,15 +67,15 @@ CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1, height=1), Absor
 # Source definition
 cr = np.array([[0,0,2*f]]).T
 dr = np.array([0,0,-1])
-ar = 4.5e-3 # radians, sun rays angular range (what's the correct value?)
+ar = 0 # radians, sun rays angular range (what's the correct value?)
 G = 1000. # W/m2 solar flux
-nrays = 10000 # number of rays escaping the source
+nrays = 1000 # number of rays escaping the source
 #TODO code in the Buie sunshape instead of a pillbox
 src = solar_disk_bundle(nrays, cr, dr, d*0.6, ar, G)
 
 # Raytrace!
 engine = TracerEngine(A)
-itmax = 100 # stop iteration after this many ray bundles were generated (i.e. 
+itmax = 1000 # stop iteration after this many ray bundles were generated (i.e. 
             # after the original rays intersected some surface this many times).
 minener = 0.001 # minimum energy threshold
 engine.ray_tracer(src, itmax, minener)
@@ -92,19 +92,19 @@ reflected.
 __________________________________________________________________________________________________________________
 '''
 
-def show_rays(engine, escaping_len=15., highlight_level=None):
+def show_rays(engine, escaping_len=5., highlight_level=None):
     """
     Function to draw the rays to a Coin3D scenegraph.
     """
     tree = engine.tree
     no = coin.SoSeparator()
-    print tree.num_bunds()
+    #print tree.num_bunds()
     
     # loop through the reflection sequences?
     co = [] # regular lines
     co_h = [] # highlighted lines
-    #pos = [] # 2D level text position
-    #text = [] # 2D level text
+    pos = [] # 2D level text position
+    text = [] # 2D level text
     hist = {} # ray histories, for highlighted rays
 
     for level in xrange(tree.num_bunds()):
@@ -135,7 +135,7 @@ def show_rays(engine, escaping_len=15., highlight_level=None):
             else:
                 l = escaping_len
                 if level == 0:
-                    l = 0.5
+                    l = 0.1
                 # Escaping ray.
                 c1 = sv[:,ray]
                 c2 = sv[:,ray] + sd[:,ray]*l
@@ -147,10 +147,10 @@ def show_rays(engine, escaping_len=15., highlight_level=None):
                 co += [(c1[0],c1[1],c1[2]), (c2[0],c2[1],c2[2])]
             # Position and text of the level 2D text. ratio is the parameter of the text position on the ray.
             # eg. 1/5 is equivalent to a text position at one fifth of the total ray length in the scene.
-            #ratio = 1./5
-            #c3 = ratio*(((1./ratio)-1.)*c1+c2)
-            #pos += [(c3[0],c3[1],c3[2])]        
-            #text.append(str(level))
+            ratio = 1./5
+            c3 = ratio*(((1./ratio)-1.)*c1+c2)
+            pos += [(c3[0],c3[1],c3[2])]        
+            text.append(str(level))
 
     def plot_rays_color(co, color=(1,1,0.5)):
         """
@@ -178,14 +178,42 @@ def show_rays(engine, escaping_len=15., highlight_level=None):
         ls.numVertices.setValues(0, len(ind), ind)
         no1.addChild(ls)
 
-        return no1 
+        return no1
+
+    def plot_level_number(text_pos, level_number):
+        """
+        Shows the number of reflections a ray has had as a 2D text on the scene.
+        Arguments:
+        text_pos - the position of the 2D text over the ray
+        level_number - the number of reflections already encountered by the ray according to ray history.
+        """
+        no2 = coin.SoSeparator()
+             
+        tr = coin.SoTransform()
+        tr.translation.setValue(text_pos)
+        no2.addChild(tr)
+
+        fo = coin.SoFont()
+        fo.name.setValue("Arial-Bold")
+        fo.size.setValue(15)
+        no2.addChild(fo)   
+
+        ma2 = coin.SoMaterial()
+        ma2.diffuseColor.setValue(1,0,1)
+        no2.addChild(ma2) 
+
+        tx = coin.SoText2()      
+        tx.string = level_number        
+        no2.addChild(tx)
+                
+        return no2       
     
     no.addChild(plot_rays_color(co))
     no.addChild(plot_rays_color(co_h, color=(1,1,1)))
-    #num = len(text)    
-    #for i in range(num):
-    #    no.addChild(plot_level_number(pos[i], text[i]))
-    
+    num = len(text)    
+    #for ref in range(num):
+    #    no.addChild(plot_level_number(pos[ref], text[ref]))
+    print "Number of reflections", num
     return no
 
 def detailed_ray_history(engine,seq):
@@ -195,7 +223,6 @@ def detailed_ray_history(engine,seq):
     """
     tree = engine.tree
     n = len(seq)
-    print seq
     for i in range(n):
         bund = tree[i]
         ray = seq[(n-1)-i]
@@ -215,26 +242,49 @@ def axis_labels(length=1):
     for k in data:
         vx,vy,vz = data[k]
         vec = (length*vx, length*vy, length*vz)
+        
         s1 = coin.SoSeparator()
-        tr1 = coin.SoTranslation()
-        tr1.translation = vec
-        s1.addChild(tr1)
+
         la = coin.SoLabel()
         la.label = k
         s1.addChild(la)
+
+        tr1 = coin.SoTranslation()
+        tr1.translation = vec
+        s1.addChild(tr1)
+
         r.addChild(s1)
+    
+        s2 = coin.SoSeparator()
+
+        tr2 = coin.SoTransform()
+        tr2.translation.setValue(data[k])
+        s2.addChild(tr2)
+
+        matxt = coin.SoMaterial()
+        matxt.diffuseColor = data[k]
+        s2.addChild(matxt)
+       
+        txaxis = coin.SoText2()      
+        txaxis.string = k       
+        s2.addChild(txaxis)
+
+        r.addChild(s2)
+
         ma = coin.SoMaterial()
         ma.diffuseColor = data[k]
         r.addChild(ma)
+
         co = coin.SoCoordinate3()
         co.point.setValues(0,2,[(0,0,0),vec])
         r.addChild(co)
+
         ls = coin.SoLineSet()
         ls.numVertices.setValues(0,1,[2])
         r.addChild(ls)
     return r
 
-# render the scene with Pivy
+# Render the scene with Pivy
 r = coin.SoSeparator()
 
 r.addChild(axis_labels())
@@ -249,10 +299,6 @@ viewer.viewAll()
 viewer.show()
 
 SoGui.show(win)
-
-t2 = time.clock()-t1
-print 'Rendering calculation time: ', t2
-print 'Total runtime: ', t2+t1
-
 SoGui.mainLoop()
 
+# vim: et:ts=4

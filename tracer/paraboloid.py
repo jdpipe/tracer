@@ -34,16 +34,19 @@ class Paraboloid(QuadricGM):
         hits - the coordinates of intersections, as an n by 3 array.
         directs - directions of the corresponding rays, n by 3 array.
         """
-        hit = N.dot(N.linalg.inv(self._working_frame), 
-            N.vstack((hits.T, N.ones(hits.shape[0]))))
+        hit = N.dot(N.linalg.inv(self._working_frame), N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
+
         partial_x = 2*hit[0]*self.a
         partial_y = 2*hit[1]*self.b
+        partial_z = -1*N.ones(N.shape(hits)[0])
         
-        local_normal = N.vstack((-partial_x, -partial_y, N.ones_like(partial_x)))
+        local_normal = N.vstack((partial_x, partial_y, partial_z))
         local_unit = local_normal/N.sqrt(N.sum(local_normal**2, axis=0))
+
         down = N.sum(dir_loc * local_unit, axis=0) > 0
         local_unit[:,down] *= -1
+
         normals = N.dot(self._working_frame[:3,:3], local_unit)
         
         return normals  
@@ -81,8 +84,8 @@ class ParabolicDishGM(Paraboloid):
         """
         par_param = 2*math.sqrt(focal_length) # [2]
         Paraboloid.__init__(self, par_param, par_param)
-        self._R = diameter/2. # For the mesh
-        self._h = (diameter/2./par_param)**2
+        self._R = float(diameter/2.) # For the mesh
+        self._h = float((diameter/2./par_param)**2)
     
     def _select_coords(self, coords, prm):
         """
@@ -105,10 +108,11 @@ class ParabolicDishGM(Paraboloid):
         positive = prm > 0
         
         coords = N.concatenate((coords, N.ones((2,1,coords.shape[2]))), axis=1)
-        local_z = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
-            coords, axis=1)
-        under_cut = (local_z <= self._h) & (prm > 0)
+        local_z = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None]*coords, axis=1)
+
+        under_cut = (local_z <= self._h) & (local_z >= 0)
         hitting = under_cut & positive
+
         select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
