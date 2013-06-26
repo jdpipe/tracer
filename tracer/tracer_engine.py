@@ -70,8 +70,8 @@ class TracerEngine():
         # If parameter == 0, ray does not actually hit object, but originates from there; 
         # so it should be ignored in considering intersections.
       
-        if (stack <= 1e-9).any():
-            zeros = N.where(stack <= 1e-9)
+        if (stack == 0).any():
+            zeros = N.where(stack == 0)
             stack[zeros] = N.inf
 
         # Find the smallest parameter for each ray, and use that as the final one,
@@ -166,8 +166,8 @@ class TracerEngine():
                 # of the full list of surfaces must be checked next. This is
                 # somewhat memory-intensize and requires optimization.
                 surf_relev = N.ones((num_surfs, new_outg.get_num_rays()), dtype=N.bool)
-                #surf_relev[surf_ownership == obj_idx] = \
-                #    objects[obj_idx].surfaces_for_next_iteration(new_outg, surf_rel_idx)
+                surf_relev[surf_ownership == obj_idx] = \
+                    objects[obj_idx].surfaces_for_next_iteration(new_outg, surf_rel_idx)
                 new_surfs_relevancy.append(surf_relev)
             
             bund = concatenate_rays(outg)

@@ -26,7 +26,7 @@ class GeometryManager(object):
         # This must be extended to return the correct result!
         if type(self) is GeometryManager:
             raise TypeError("Find intersections must be extended by a base class")
-    
+
     def up(self):
         """
         Returns a single direction that is considered "up" in the woking frame
@@ -42,7 +42,7 @@ class GeometryManager(object):
         if hasattr(self, '_working_frame'):
             del self._working_frame
             del self._working_bundle
-    
+   
     def select_rays(self, idxs):
         """
         Inform the surface that only the rays at indices `idxs` will be used.

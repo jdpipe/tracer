@@ -28,6 +28,7 @@ def single_ray_source(position, direction, flux=None):
     A Raybundle object with the corresponding characteristics.
     '''
     directions = N.tile(direction[:,None],1)
+    directions /= N.sqrt(N.sum(directions**2, axis=0))
     singray = RayBundle(vertices = position, directions = directions)
     singray.set_energy(flux*N.ones(1))
     return singray
@@ -49,7 +50,7 @@ def pillbox_sunshape_directions(num_rays, ang_range):
     """
     # Diffuse divergence from +Z:
     # development based on eq. 2.12  from [1]
-    xi1 = random.uniform(high=2*N.pi, size=num_rays)
+    xi1 = random.uniform(high=2.*N.pi, size=num_rays)
     xi2 = random.uniform(size=num_rays)
     theta = N.arcsin(N.sin(ang_range)*N.sqrt(xi2))
     sin_th = N.sin(theta)
@@ -84,7 +85,6 @@ def solar_disk_bundle(num_rays,  center,  direction,  radius,  ang_range, flux=N
     # Rotate to a frame in which <direction> is Z:
     perp_rot = rotation_to_z(direction)
     directions = N.sum(perp_rot[...,None] * a[None,...], axis=1)
-
     # Locations:
     # See [1]
     xi1 = random.uniform(size=num_rays)

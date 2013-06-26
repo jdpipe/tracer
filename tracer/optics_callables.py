@@ -32,7 +32,7 @@ perfect_mirror = Reflective(0)
 
 class RealReflective(object):
     '''
-    Generates a function that represents the optique of an opaque absorptive surface with specular reflections and realistic shape error. The slope error is considered as equal in both x and y directions. The consequent distribution of standard deviation is described by a radial bivariate normal distribution law.
+    Generates a function that represents the optics of an opaque absorptive surface with specular reflections and realistic shape error. The slope error is considered as equal in both x and y directions. The consequent distribution of standard deviation is described by a radial bivariate normal distribution law.
 
     Arguments:
     absorptivity - the amount of energy absorbed before reflection
@@ -212,13 +212,13 @@ class LambertianReflector(object):
         selector - indices into ``rays`` of the hitting rays.
         """
         directs = sources.pillbox_sunshape_directions(len(selector), N.pi/2.)
-        directs = N.sum(rotation_to_z(geometry.get_normals().T) * \
-            directs.T[:,None,:], axis=2).T
+        directs = N.sum(rotation_to_z(geometry.get_normals().T) * directs.T[:,None,:], axis=2).T
         
         outg = rays.inherit(selector,
             vertices=geometry.get_intersection_points_global(),
             energy=rays.get_energy()[selector]*(1 - self._abs),
-            direction=directs, parents=selector)
+            direction=directs, 
+            parents=selector)
         return outg
 
 class LambertianReceiver(AbsorptionAccountant):

@@ -105,7 +105,7 @@ class ParabolicDishGM(Paraboloid):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        positive = prm > 0
+        positive = prm > 1e-10
         
         coords = N.concatenate((coords, N.ones((2,1,coords.shape[2]))), axis=1)
         local_z = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None]*coords, axis=1)

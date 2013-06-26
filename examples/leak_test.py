@@ -31,13 +31,13 @@ A = Assembly()
 '''
 # Cylinder.
 alpha1 = 0.8
-CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), Reflective(alpha1))], transform = rotx(N.pi/2))
+CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), Reflective(alpha1))], transform = rotx(N.pi/2.))
 A.add_object(CYL)
 # Cone
-CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), Reflective(alpha1))], transform = N.dot(rotx(N.pi/2), translate(x=5, z=-1)))
+CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), Reflective(alpha1))], transform = N.dot(rotx(N.pi/2.), translate(x=5, z=-1)))
 A.add_object(CON)
 # Frustum
-FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), Reflective(alpha1))], transform = translate(x=10))
+FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), Reflective(alpha1))], transform = translate(x=10.))
 A.add_object(FRU)
 '''
 <<< Sources declaration >>>
@@ -45,7 +45,7 @@ A.add_object(FRU)
 # Sources: define as many single ray sources as needed.
 srcs = []
 G = 1000. # W/m2 solar flux
-
+'''
 # Cylinder sources:
 # Cylinder Source 1:
 centerc1 = np.array([[0,3,-3]]).T
@@ -87,7 +87,7 @@ centerc8 = np.array([[0,0.2,3]]).T
 directc8 = np.array([0,0,-1])
 srcc8 = single_ray_source(centerc8, directc8, G)
 srcs.append(srcc8)
-  
+'''  
 # FiniteCone sources:
 # FiniteCone Source 1:
 centerco1 = np.array([[5,-3,0]]).T

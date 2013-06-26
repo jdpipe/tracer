@@ -36,20 +36,21 @@ class InfiniteCone(QuadricGM):
         directs - directions of the corresponding rays, n by 3 array.
         """
         # Transform the position and directions of the hits temporarily in the frame of 
-        # the geometry for calculations       
-        hit = N.dot(N.linalg.inv(self._working_frame), N.vstack((hits.T, N.ones(hits.shape[0]))))
+        # the geometry for calculations
+        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
+        hit = N.dot(proj, N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
         # Partial derivation of the 'hit' equations <=> normal directions       
-        partial_x = 2*hit[0]
-        partial_y = 2*hit[1]
-        partial_z = -2*self.c**2*(hit[2] - self.a)        
+        partial_x = 2.*hit[0]
+        partial_y = 2.*hit[1]
+        partial_z = -2.*self.c**2.*(hit[2] - self.a)        
         # Build local unit normal vector
         local_normal = N.vstack((partial_x, partial_y, partial_z))
         local_unit = local_normal/N.sqrt(N.sum(local_normal**2, axis=0))
         # Identify the orientation of the normal considering the incident orientation of the 
         # ray. Treat the specific case of the apex setting the normal to be
         # -1*dir_loc at that point.
-        down = N.sum(dir_loc * local_unit, axis=0) > 0
+        down = N.sum(dir_loc * local_unit, axis=0) > 0.
         apex = (hit[2] == self.a)
         local_unit[:,down] *= -1  
         local_unit[:,apex] = N.vstack((0,0,-1))
@@ -64,13 +65,18 @@ class InfiniteCone(QuadricGM):
         # Transform the the direction and position of the rays temporarily into the
         # frame of the paraboloid for calculations
         d = N.dot(self._working_frame[:3,:3].T, ray_bundle.get_directions())
-        v = N.dot(N.linalg.inv(self._working_frame), 
-            N.vstack((ray_bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
-        
+        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
+        v = N.dot(proj, N.vstack((ray_bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
+
+        #print 'bun dir',ray_bundle.get_directions()  
+        #print 'd',d
+        #print 'v',v 
         A = d[0]**2 + d[1]**2 - (self.c*d[2])**2
         B = 2*(v[0]*d[0] + v[1]*d[1] - self.c**2*(v[2] - self.a)*d[2])
         C = v[0]**2 + v[1]**2 - (self.c*(v[2] - self.a))**2
-
+        #print('A',A)
+        #print('B',B)
+        #print('C',C)
         return A, B, C
 
 class FiniteCone(InfiniteCone):
@@ -107,11 +113,11 @@ class FiniteCone(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
-            N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
+        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
+        height = N.sum(proj[None,2,:,None] * N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         
         inside = (height >= 0) & (height <= self.h)
-        positive = prm > 0
+        positive = prm > 1e-10
 
         hitting = inside & positive
         select[N.logical_and(*hitting)] = 1
@@ -160,7 +166,7 @@ class ConicalFrustum(InfiniteCone):
     z1 must not equal z2; r1 must not equal r2; r1 and r2 must be positive.
     """
     def __init__(self, z1, r1, z2, r2):
-        if r1 <= 0 or r2 <= 0:
+        if r1 <= 0. or r2 <= 0.:
             raise AttributeError
         if r1 == r2 or z1 == z2:
             raise AttributeError
@@ -191,12 +197,12 @@ class ConicalFrustum(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
         # Projects the hit coordinates in a local frame on the z axis.
-        height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
-            N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
+        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
+        height = N.sum(proj[None,2,:,None]*N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         # Checks if the local_z-projected hit coords are in the actual height of the furstum
         # and if the parameter is positive so that the ray goes ahead.
         inside = (self.z1 <= height) & (height <= self.z2)
-        positive = prm > 0
+        positive = prm > 1e-10
         hitting = inside & positive
         # Choses between the two intersections offered by the surface.
         select[N.logical_and(*hitting)] = 1

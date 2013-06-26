@@ -49,7 +49,7 @@ class QuadricGM(GeometryManager):
         v = ray_bundle.get_vertices()
         n = ray_bundle.get_num_rays()
         c = self._working_frame[:3,3]
-        
+  
         params = N.empty(n)
         params.fill(N.inf)
         vertices = N.empty((3,n))
@@ -57,51 +57,48 @@ class QuadricGM(GeometryManager):
         # Gets the relevant A, B, C from whichever quadric surface, see [1]
         A, B, C = self.get_ABC(ray_bundle)
 
-        # Identify intersections        
-        delta = B**2 - 4*A*C
-        any_inters = delta >= 0
+        # Identify quadric intersections        
+        delta = B**2 - 4.*A*C
+        any_inters = delta >= 0.
         num_inters = any_inters.sum()
         if num_inters == 0:
             self._vertices = vertices
-            return params
-        
+            return params      
+
         A = A[any_inters]
         B = B[any_inters]
-        C = C[any_inters]
-        delta = N.sqrt(delta[any_inters])
+        C = C[any_inters]        
+        
+        delta = N.sqrt(B**2 - 4.*A*C)
+
+        hits = N.empty((2,num_inters))
+        hits.fill(N.nan)
 
         # Identify linear equations
-        is_linear = A == 0.
-        is_quadric = ~is_linear
-        # Identify specific B=0 case
-        is_Bnull = B == 0.
-        is_not_Bnull = ~is_Bnull
-        
-        hits = N.empty((2, num_inters))
-        
+        is_linear = A == 0
+        # Identify B = 0 cases
+        is_Bnull = B == 0
         # Solve linear intersections        
-        hits[:,is_linear] = N.tile(-C[is_linear]/B[is_linear], (2,1))
-        # Solve quadric specific situations (B = 0)
-        hits[0,is_quadric & is_Bnull] = -N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
-        hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
+        hits[:,is_linear & ~is_Bnull] = N.tile(-C[is_linear & ~is_Bnull]/B[is_linear & ~is_Bnull], (2,1))     
+        # Solve B = 0 cases (give bad information on N.sign(0)
+        hits[0,~is_linear & is_Bnull] = -N.sqrt(-C[~is_linear & is_Bnull]/A[~is_linear & is_Bnull])
+        hits[1,~is_linear & is_Bnull] = N.sqrt(-C[~is_linear & is_Bnull]/A[~is_linear & is_Bnull])
         # Solve quadric regular intersections
         q = -0.5*(B+N.sign(B)*delta)
-        hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
-        hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]
-        # Rounds parameters results to get 0 where it's a 0.
-        hits = N.round_(hits, decimals = 9)        
-              
+        hits[0,~is_linear & ~is_Bnull] = q[~is_linear & ~is_Bnull]/A[~is_linear & ~is_Bnull]
+        hits[1,~is_linear & ~is_Bnull] = C[~is_linear & ~is_Bnull]/q[~is_linear & ~is_Bnull]
+   
+        #print('hits',hits, N.shape(hits))              
         # Get intersection coordinates using rays parameters
         inters_coords = v[:,any_inters] + d[:,any_inters]*hits.reshape(2,1,-1)
-        
+        #print('inters_coords,:', inters_coords,N.shape(inters_coords))        
+
         # Quadrics can have two intersections. Here we allow child classes
         # to choose based on own method:
         select = self._select_coords(inters_coords, hits)
-
         not_missed = ~N.isnan(select)
         any_inters[any_inters] = not_missed
         select = N.array(select[not_missed], dtype=N.int_)
-
         params[any_inters] = N.choose(select, hits[:,not_missed])
         vertices[:,any_inters] = N.choose(select, inters_coords[...,not_missed])
         
@@ -128,12 +125,13 @@ class QuadricGM(GeometryManager):
         Returns:
         The index of the selected intersection, or None if neither will do.
         """
-        is_positive = prm > 0
+        is_positive = prm > 1e-10
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
         # If both are positive, use the smaller one
         select[N.logical_and(*is_positive)] = 1
+        #print 'select:', select, N.shape(select)
         # If either one is negative, use the positive one
         one_pos = N.logical_xor(*is_positive)
         select[one_pos] = N.nonzero(is_positive.T[one_pos,:])[1]
