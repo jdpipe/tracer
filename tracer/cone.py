@@ -37,8 +37,7 @@ class InfiniteCone(QuadricGM):
         """
         # Transform the position and directions of the hits temporarily in the frame of 
         # the geometry for calculations
-        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
-        hit = N.dot(proj, N.vstack((hits.T, N.ones(hits.shape[0]))))
+        hit = N.dot(N.linalg.inv(self._working_frame), N.vstack((hits.T, N.ones(hits.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, directs.T)
         # Partial derivation of the 'hit' equations <=> normal directions       
         partial_x = 2.*hit[0]
@@ -65,10 +64,8 @@ class InfiniteCone(QuadricGM):
         # Transform the the direction and position of the rays temporarily into the
         # frame of the paraboloid for calculations
         d = N.dot(self._working_frame[:3,:3].T, ray_bundle.get_directions())
-        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
-        v = N.dot(proj, N.vstack((ray_bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
+        v = N.dot(N.linalg.inv(self._working_frame), N.vstack((ray_bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
 
-        #print 'bun dir',ray_bundle.get_directions()  
         #print 'd',d
         #print 'v',v 
         A = d[0]**2 + d[1]**2 - (self.c*d[2])**2
@@ -113,8 +110,7 @@ class FiniteCone(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
 
-        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
-        height = N.sum(proj[None,2,:,None] * N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
+        height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         
         inside = (height >= 0) & (height <= self.h)
         positive = prm > 1e-10
@@ -197,8 +193,7 @@ class ConicalFrustum(InfiniteCone):
         select = N.empty(prm.shape[1])
         select.fill(N.nan)
         # Projects the hit coordinates in a local frame on the z axis.
-        proj = N.round_(N.linalg.inv(self._working_frame), decimals=9)
-        height = N.sum(proj[None,2,:,None]*N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
+        height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None]*N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         # Checks if the local_z-projected hit coords are in the actual height of the furstum
         # and if the parameter is positive so that the ray goes ahead.
         inside = (self.z1 <= height) & (height <= self.z2)

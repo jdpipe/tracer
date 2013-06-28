@@ -11,6 +11,7 @@ from tracer.object import *
 from tracer.spatial_geometry import *
 from tracer.sources import *
 from tracer.tracer_engine import *
+from tracer.trace_tree import *
 
 import pivy.coin as coin
 SOGUI_BINDING="SoQt"
@@ -31,13 +32,13 @@ A = Assembly()
 '''
 # Cylinder.
 alpha1 = 0.8
-CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), Reflective(alpha1))], transform = rotx(N.pi/2.))
+CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), ReflectiveReceiver(alpha1))], transform = rotx(N.pi/2.))
 A.add_object(CYL)
 # Cone
-CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), Reflective(alpha1))], transform = N.dot(rotx(N.pi/2.), translate(x=5, z=-1)))
+CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), ReflectiveReceiver(alpha1))], transform = N.dot(rotx(N.pi/2.), translate(x=5, z=-1)))
 A.add_object(CON)
 # Frustum
-FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), Reflective(alpha1))], transform = translate(x=10.))
+FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), ReflectiveReceiver(alpha1))], transform = translate(x=10.))
 A.add_object(FRU)
 '''
 <<< Sources declaration >>>
@@ -212,8 +213,21 @@ engine = TracerEngine(A)
 itmax = 10 # stop iteration after this many ray bundles were generated (i.e. 
             # after the original rays intersected some surface this many times).
 minener = 0.1 # minimum energy threshold
-engine.ray_tracer(src, itmax, minener)
+engine.ray_tracer(src, itmax, minener, tree = True)
+Cone_acc = AbsorptionAccountant.get_all_hits(CON.get_surfaces()[0].get_optics_manager())
+Cone_abs = Cone_acc[0]
+Cone_hits = Cone_acc[1]
+Frustum_acc = AbsorptionAccountant.get_all_hits(FRU.get_surfaces()[0].get_optics_manager())
+Frustum_abs = Frustum_acc[0]
+Frustum_hits = Frustum_acc[1]
+print 'Cone_abs', Cone_abs
+print 'Frustum_abs', Frustum_abs
+print 'rays_in'
+print engine.rays_in
+print 'lost_energy'
+print engine.lost_energy
 
+print 'balance:', N.sum(src.get_energy())-N.sum(N.concatenate(engine.lost_energy))-N.sum(N.concatenate((Cone_abs,Frustum_abs)))
 '''
 __________________________________________________________________________________________________________________
 Rendering:

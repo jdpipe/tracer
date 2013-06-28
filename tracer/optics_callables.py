@@ -42,14 +42,14 @@ class RealReflective(object):
     Reflective - a function with the signature required by surface
     '''
     def __init__(self, absorptivity, sigma_xy):
-        self._abs = absorptivity
-        self.sig = float(sigma_xy)
+        self._abs = float(absorptivity)
+        self._sig = float(sigma_xy)
 
     def __call__(self, geometry, rays, selector):
         ideal_normals = geometry.get_normals()
         # Creates projection of error_normal on the surface (sin can be avoided because of very small angles).
-        normal_errors_x = N.sin(N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1])))
-        normal_errors_y = N.sin(N.random.normal(scale=self.sig, size=N.shape(ideal_normals[1])))
+        normal_errors_x = N.sin(N.random.normal(scale=self._sig, size=N.shape(ideal_normals[1])))
+        normal_errors_y = N.sin(N.random.normal(scale=self._sig, size=N.shape(ideal_normals[1])))
         normal_errors_z = N.zeros(N.shape(ideal_normals[1]))
         # Build the normal_error vectors in the local frame.
         normal_errors = N.dot(geometry._working_frame[:3,:3], N.vstack((normal_errors_x, normal_errors_y, normal_errors_z)))
@@ -69,7 +69,7 @@ class AbsorptionAccountant(object):
     This optics manager remembers all of the locations where rays hit it
     in all iterations, and the energy absorbed from each ray.
     """
-    def __init__(self, real_optics, absorptivity=1.):
+    def __init__(self, real_optics, absorptivity=1., sigma_xy=None):
         """
         Arguments:
         real_optics - the optics manager class to actually use. Expected to
@@ -78,7 +78,10 @@ class AbsorptionAccountant(object):
             LambertianReflector below).
         absorptivity - to be passed to a new real_optics object.
         """
-        self._opt = real_optics(absorptivity)
+        if sigma_xy==None:
+            self._opt = real_optics(absorptivity)
+        else:
+            self._opt = real_optics(absorptivity, sigma_xy)
         self.reset()
     
     def reset(self):
@@ -109,6 +112,11 @@ class ReflectiveReceiver(AbsorptionAccountant):
     """A wrapper around AbsorptionAccountant with a Reflective optics"""
     def __init__(self, absorptivity=1.):
         AbsorptionAccountant.__init__(self, Reflective, absorptivity)
+
+class RealReflectiveReceiver(AbsorptionAccountant):
+    """A wrapper around AbsorptionAccountant with a RealReflective optics"""
+    def __init__(self, absorptivity=1., sigma_xy=0):
+        AbsorptionAccountant.__init__(self, RealReflective, absorptivity, sigma_xy)
         
 class AbsorberReflector(Reflective):
     """
