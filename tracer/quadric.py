@@ -49,66 +49,50 @@ class QuadricGM(GeometryManager):
         v = ray_bundle.get_vertices()
         n = ray_bundle.get_num_rays()
         c = self._working_frame[:3,3]
-        
+  
         params = N.empty(n)
         params.fill(N.inf)
         vertices = N.empty((3,n))
         
         # Gets the relevant A, B, C from whichever quadric surface, see [1]
         A, B, C = self.get_ABC(ray_bundle)
-        # Identify linear equations        
-        delta = B**2 - 4*A*C
-        any_inters = delta >= 0
+
+        # Identify quadric intersections        
+        delta = B**2 - 4.*A*C
+        any_inters = delta >= 0.
         num_inters = any_inters.sum()
         if num_inters == 0:
             self._vertices = vertices
-            return params
-        
+            return params      
+
         A = A[any_inters]
         B = B[any_inters]
-        C = C[any_inters]
-        delta = N.sqrt(delta[any_inters])
-        #print 'A=', A
-        #print 'B=', B
-        #print 'C=', C
+        C = C[any_inters]        
+        
+        delta = N.sqrt(B**2 - 4.*A*C)
 
-        hits = N.empty((2, num_inters))
-        if 1:
-            pm = N.c_[[-1, 1]]
-            # NOTE: added 'abs' in following line in response to false detection of
-            # 'almost_planar' in simple tests with cone-ray intersection where
-            # quadratic coefficient 'A' was calculated as negative.. that OK? -- JP.
-            almost_planar = abs(A) <= 1e-10
-            really_quadric = ~almost_planar
-            hits[:,almost_planar] = N.tile(-C[almost_planar]/B[almost_planar], (2,1))
-            hits[:,really_quadric] = \
-                (-B[really_quadric] + pm*delta[really_quadric])/(2*A[really_quadric])
-        else:
-            # FIXME this code isn't working, breaks TestInfiniteCone.
-            # http://en.wikipedia.org/wiki/Quadratic_equation#Avoiding_loss_of_significance
-            q = -0.5 * (B + N.sign(B)*delta)
-            hits[0,:] = q / A
-            hits[1,:] = C / q
-            #N.sort(hits, axis=0)
+        hits = N.empty((2,num_inters))
+        hits.fill(N.nan)
 
-        #print "hits =\n",hits
-    
+        # Identify linear equations
         is_linear = A == 0
+        # Identify B = 0 cases
         is_Bnull = B == 0
-        is_not_Bnull = ~is_Bnull
-        is_quadric = ~is_linear
-
-        hits = N.empty((2, num_inters))
-        hits[:,is_linear] = N.tile(-C[is_linear]/B[is_linear], (2,1))
-        
+        # Solve linear intersections        
+        hits[:,is_linear & ~is_Bnull] = N.tile(-C[is_linear & ~is_Bnull]/B[is_linear & ~is_Bnull], (2,1))     
+        # Solve B = 0 cases (give bad information on N.sign(0)
+        hits[0,~is_linear & is_Bnull] = -N.sqrt(-C[~is_linear & is_Bnull]/A[~is_linear & is_Bnull])
+        hits[1,~is_linear & is_Bnull] = N.sqrt(-C[~is_linear & is_Bnull]/A[~is_linear & is_Bnull])
+        # Solve quadric regular intersections
         q = -0.5*(B+N.sign(B)*delta)
-        hits[0,is_quadric & is_not_Bnull] = q[is_quadric & is_not_Bnull]/A[is_quadric & is_not_Bnull]
-        hits[1,is_quadric & is_not_Bnull] = C[is_quadric & is_not_Bnull]/q[is_quadric & is_not_Bnull]
-        hits[0,is_quadric & is_Bnull] = -N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
-        hits[1,is_quadric & is_Bnull] = N.sqrt(-C[is_quadric & is_Bnull]/A[is_quadric & is_Bnull])
-                    
+        hits[0,~is_linear & ~is_Bnull] = q[~is_linear & ~is_Bnull]/A[~is_linear & ~is_Bnull]
+        hits[1,~is_linear & ~is_Bnull] = C[~is_linear & ~is_Bnull]/q[~is_linear & ~is_Bnull]
+   
+        #print('hits',hits, N.shape(hits))              
+        # Get intersection coordinates using rays parameters
         inters_coords = v[:,any_inters] + d[:,any_inters]*hits.reshape(2,1,-1)
-        
+        #print('inters_coords,:', inters_coords,N.shape(inters_coords))        
+
         # Quadrics can have two intersections. Here we allow child classes
         # to choose based on own method:
         select = self._select_coords(inters_coords, hits)
@@ -120,7 +104,7 @@ class QuadricGM(GeometryManager):
         
         # Storage for later reference:
         self._vertices = vertices
-        
+  
         return params
     
     def _select_coords(self, coords, prm):
@@ -141,16 +125,13 @@ class QuadricGM(GeometryManager):
         Returns:
         The index of the selected intersection, or None if neither will do.
         """
-        is_positive = prm > 0
+        is_positive = prm > 1e-10
         select = N.empty(prm.shape[1])
+        select.fill(N.nan)
 
-        # If both are negative, it is a miss
-        # This line also catches the cases of the last xor.
-        select[~N.logical_or(*is_positive)] = N.nan
-        
         # If both are positive, use the smaller one
-        select[N.logical_and(*is_positive)] = 0
-        
+        select[N.logical_and(*is_positive)] = 1
+        #print 'select:', select, N.shape(select)
         # If either one is negative, use the positive one
         one_pos = N.logical_xor(*is_positive)
         select[one_pos] = N.nonzero(is_positive.T[one_pos,:])[1]

@@ -48,25 +48,29 @@ class TracerEngine():
         
         # Bounce rays off each object
         for surf_num in xrange(len(surfaces)):
-            owned_rays[surf_num] = ((ray_ownership == -1) | \
-                (ray_ownership == surf_ownership[surf_num])) & surf_relevancy[surf_num]
+            # Elements of owned_rays[surfnum] set to 1 if (rays dont own any surface or rays own the actual surface) and the surface is relevant to these rays.
+            owned_rays[surf_num] = ((ray_ownership == -1) | (ray_ownership == surf_ownership[surf_num])) & surf_relevancy[surf_num]
+            # If no ray is owned, skip the rest and build the stack
             if not owned_rays[surf_num].any():
                 continue
+            # If some rays are not owned, the bundle inherits the owned_rays only
             if (~owned_rays[surf_num]).any():
                 in_rays = bundle.inherit(owned_rays[surf_num])
+               # ...Otherwise all the bundle goes into in_rays
             else:
                 in_rays = bundle
-            stack[surf_num, owned_rays[surf_num]] = \
-                surfaces[surf_num].register_incoming(in_rays)
-        
-        # Raise an error if any of the parameters are negative
-        if (stack < -1e-16).any():
+            # Fills the stack assigning rays to surfaces hit.
+            stack[surf_num, owned_rays[surf_num]] = surfaces[surf_num].register_incoming(in_rays)
+
+        # Raise an error if any of the parameters is negative
+        if (stack < 0).any():
             raise ValueError("Parameters must all be positive")
         
         # If parameter == 0, ray does not actually hit object, but originates from there; 
-        # so it should be ignored in considering intersections 
-        if (stack <= 1e-10).any():
-            zeros = N.where(stack <= 1e-6)
+        # so it should be ignored in considering intersections.
+      
+        if (stack == 0).any():
+            zeros = N.where(stack == 0)
             stack[zeros] = N.inf
 
         # Find the smallest parameter for each ray, and use that as the final one,
@@ -116,6 +120,9 @@ class TracerEngine():
         ray_ownership = -1*N.ones(bund.get_num_rays())
         surfs_relevancy = N.ones((num_surfs, bund.get_num_rays()), dtype=N.bool)
         
+        self.rays_in = []
+        self.lost_energy = []        
+
         for i in xrange(reps):
             print "\nBUNDLE %d\n"%i
 
@@ -126,7 +133,9 @@ class TracerEngine():
             out_ray_own = []
             new_surfs_relevancy = []
             weak_ray_pos = []
-            
+            self.rays_in.append(N.sum(front_surf, axis=0, dtype=N.bool))
+            self.lost_energy.append(~self.rays_in[i]*bund.get_energy())
+
             for surf_idx in xrange(num_surfs):
                 inters = front_surf[surf_idx, owned_rays[surf_idx]]
                 if not any(inters): 
@@ -146,7 +155,7 @@ class TracerEngine():
                 if delete.any():
                     new_outg = new_outg.delete_rays(N.nonzero(delete)[0])
                 surfaces[surf_idx].done()
-                
+
                 # Aggregate outgoing bundles from all the objects
                 outg.append(new_outg)
                 record.append(new_record)
@@ -169,24 +178,23 @@ class TracerEngine():
             if tree:
                 # stores parent branch for purposes of ray tracking
                 record = concatenate_rays(record)
-                
                 if record.get_num_rays() != 0:
                     weak_ray_pos = N.hstack(weak_ray_pos)
                     record = bund + record.inherit(N.nonzero(weak_ray_pos)[0])
                     self.tree.append(record)
-                
+
             if bund.get_num_rays() == 0:
                 # All rays escaping
                 break
             
             ray_ownership = N.hstack(out_ray_own)
             surfs_relevancy = N.hstack(new_surfs_relevancy)
-            
+
         if not tree:
             # Save only the last bundle. Don't bother moving weak rays to end.
             record = concatenate_rays(record)
             self.tree.append(record)
-             
+ 
         return bund.get_vertices(), bund.get_directions()
 
 

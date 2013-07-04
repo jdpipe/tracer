@@ -28,12 +28,12 @@ class HasFrame(object):
         if rotation is None:
             rotation = N.eye(3)
 
-        self._transform = N.empty((4,4))
+        self._transform = N.zeros((4,4))
         self._transform[3,:] = N.r_[0, 0, 0, 1]
         self.set_location(location)
         self.set_rotation(rotation)
         self._temp_frame = self._transform
-
+        
         # TODO for compatibility with Coin3D we might need to store these rotations
         # internally as quaternions... hmmm...???
 

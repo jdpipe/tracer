@@ -5,18 +5,13 @@ np.set_printoptions(linewidth=140)
 from tracer.surface import *
 from tracer.cone import *
 from tracer.cylinder import *
-from tracer.sphere_surface import *
-from tracer.paraboloid import *
-from tracer.flat_surface import *
 from tracer.assembly import *
 from tracer.optics_callables import *
 from tracer.object import *
 from tracer.spatial_geometry import *
 from tracer.sources import *
 from tracer.tracer_engine import *
-from tracer.models.one_sided_mirror import *
-import types
-import time
+from tracer.trace_tree import *
 
 import pivy.coin as coin
 SOGUI_BINDING="SoQt"
@@ -24,65 +19,215 @@ from pivy.sogui import *
 
 '''
 _________________________________________________________________________________________________________________
-John.py:
+leak_test:
 
-Test on cavity geometry using 2 frustii.
+Test of cylindrical geometry hit by a simple sources to figure out if some specific ray incidence causes the 
+leak. All single_ray_sources are added to the srcs list and concatenated. 
 _________________________________________________________________________________________________________________
 '''
-t0 = time.clock()
 
 A = Assembly()
-
-# Paraboloidal dish...
-alpha = 0.1 # dish absorptivity
-d = 22 # dish diameter
-f = 13.4 # dish focal length
-tr0 = translate(z=-f)
-#P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), Reflective(absorptivity=alpha))], transform=tr0)
-P = AssembledObject(surfs=[Surface(ParabolicDishGM(d, f), RealReflective(absorptivity=alpha, sigma_xy=4e-3))], transform=tr0)
-A.add_object(P)
-
-# A beautiful thick, double frustum with 2 different sides. Still leaks.
-alpha2 = 0.5
-tr = N.dot(rotx(N.pi), translate(z=-0.3))
-width = 0.001 # receiver thickness at frustii junction
-# 1st frustum
-CO1front = Surface(ConicalFrustum(z1=-0.5,r1=0.01,z2=0,r2=0.7), Reflective(alpha2))
-CO1back = Surface(ConicalFrustum(z1=-0.5,r1=0.01+width,z2=0,r2=0.7), Reflective(alpha2))
-CO1 = AssembledObject(surfs=[CO1front,CO1back], transform=tr)
-CO1.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO1, CO1.__class__)
-# 2nd frustum
-CO2front = Surface(ConicalFrustum(z1=0,r1=0.7,z2=0.3,r2=0.4), Reflective(alpha2))
-CO2back = Surface(ConicalFrustum(z1=0,r1=0.7+width,z2=0.3,r2=0.4), Reflective(alpha2))
-CO2 = AssembledObject(surfs=[CO2front,CO2back], transform=tr)
-CO2.surfaces_for_next_iteration = types.MethodType(surfaces_for_next_iteration, CO2, CO2.__class__)
-# add to general assembly
-A.add_object(CO1)
-A.add_object(CO2)
-
-# A cylinder!
-CY1 = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1, height=1), AbsorberReflector(0.1))], transform=rotx(N.pi/2))
-#A.add_object(CY1)
- 
-# Source definition
-cr = np.array([[0,0,2*f]]).T
-dr = np.array([0,0,-1])
-ar = 0 # radians, sun rays angular range (what's the correct value?)
+'''
+<<< Geometry declaration >>>
+'''
+# Cylinder.
+alpha1 = 0.8
+CYL = AssembledObject(surfs=[Surface(FiniteCylinder(diameter=1,height=1), ReflectiveReceiver(alpha1))], transform = rotx(N.pi/2.))
+A.add_object(CYL)
+# Cone
+CON = AssembledObject(surfs=[Surface(FiniteCone(r=1.,h=1.), ReflectiveReceiver(alpha1))], transform = N.dot(rotx(N.pi/2.), translate(x=5, z=-1)))
+A.add_object(CON)
+# Frustum
+FRU = AssembledObject(surfs=[Surface(ConicalFrustum(z1=0,r1=1,z2=1,r2=0.5), ReflectiveReceiver(alpha1))], transform = translate(x=10.))
+A.add_object(FRU)
+'''
+<<< Sources declaration >>>
+'''
+# Sources: define as many single ray sources as needed.
+srcs = []
 G = 1000. # W/m2 solar flux
-nrays = 1000 # number of rays escaping the source
-#TODO code in the Buie sunshape instead of a pillbox
-src = solar_disk_bundle(nrays, cr, dr, d*0.6, ar, G)
+'''
+# Cylinder sources:
+# Cylinder Source 1:
+centerc1 = np.array([[0,3,-3]]).T
+directc1 = np.array([0,-1.2,1])
+srcc1 = single_ray_source(centerc1, directc1, G)
+srcs.append(srcc1)
+# Cylinder Source 2:
+centerc2 = np.array([[-0.4,0.2,3]]).T
+directc2 = np.array([0,0,-1])
+srcc2 = single_ray_source(centerc2, directc2, G)
+srcs.append(srcc2)
+# Cylinder Source 3:
+centerc3 = np.array([[3,2.5,0]]).T
+directc3 = np.array([-1,-1,0])
+srcc3 = single_ray_source(centerc3, directc3, G)
+srcs.append(srcc3)
+# Cylinder Source 4:
+centerc4 = np.array([[3,2.7,0]]).T
+directc4 = np.array([-1,-1,0])
+srcc4 = single_ray_source(centerc4, directc4, G)
+srcs.append(srcc4)
+# Cylinder Source 5:
+centerc5 = np.array([[3,2.9,0]]).T
+directc5 = np.array([-1,-1,0])
+srcc5 = single_ray_source(centerc5, directc5, G)
+srcs.append(srcc5)
+# Cylinder Source 6:
+centerc6 = np.array([[3,3,0]]).T
+directc6 = np.array([-1,-1,0])
+srcc6 = single_ray_source(centerc6, directc6, G)
+srcs.append(srcc6)
+# Cylinder Source 7:
+centerc7 = np.array([[-0.2,0.2,3]]).T
+directc7 = np.array([0,0,-1])
+srcc7 = single_ray_source(centerc7, directc7, G)
+srcs.append(srcc7)
+# Cylinder Source 8:
+centerc8 = np.array([[0,0.2,3]]).T
+directc8 = np.array([0,0,-1])
+srcc8 = single_ray_source(centerc8, directc8, G)
+srcs.append(srcc8)
+'''  
+# FiniteCone sources:
+# FiniteCone Source 1:
+centerco1 = np.array([[5,-3,0]]).T
+directco1 = np.array([0,1,0])
+srcco1 = single_ray_source(centerco1, directco1, G)
+#srcs.append(srcco1)
+# FiniteCone Source 2:
+centerco2 = np.array([[5,0.3,3]]).T
+directco2 = np.array([0,0,-1])
+srcco2 = single_ray_source(centerco2, directco2, G)
+srcs.append(srcco2)
+# FiniteCone Source 3:
+centerco3 = np.array([[5,0,0.2]]).T
+directco3 = np.array([-1,0,0])
+srcco3 = single_ray_source(centerco3, directco3, G)
+srcs.append(srcco3)
+# FiniteCone Source 4:
+centerco4 = np.array([[5.25,3,0.2]]).T
+directco4 = np.array([0,-1,0])
+srcco4 = single_ray_source(centerco4, directco4, G)
+srcs.append(srcco4) 
+# FiniteCone Source 5:
+centerco5 = np.array([[5,2,0]]).T
+directco5 = np.array([0,-1,0])
+srcco5 = single_ray_source(centerco5, directco5, G)
+srcs.append(srcco5)
+# FiniteCone Source 6:
+centerco6 = np.array([[6,6,0]]).T
+directco6 = np.array([-0.2,-1,0])
+srcco6 = single_ray_source(centerco6, directco6, G)
+srcs.append(srcco6)
+# FiniteCone Source 7:
+centerco7 = np.array([[4.6,0.3,3]]).T
+directco7 = np.array([0,0,-1])
+srcco7 = single_ray_source(centerco7, directco7, G)
+srcs.append(srcco7)
+# FiniteCone Source 8:
+centerco8 = np.array([[5,-1,1]]).T
+directco8 = np.array([0,1,-0.6])
+srcco8 = single_ray_source(centerco8, directco8, G)
+srcs.append(srcco8)
+# FiniteCone Source 9:
+centerco9 = np.array([[5,-1,1]]).T
+directco9 = np.array([0,1,-0.7])
+srcco9 = single_ray_source(centerco9, directco9, G)
+srcs.append(srcco9)
+# FiniteCone Source 10:
+centerco10 = np.array([[5,-1,1]]).T
+directco10 = np.array([0,1,-0.8])
+srcco10 = single_ray_source(centerco10, directco10, G)
+srcs.append(srcco10)
+# FiniteCone Source 11:
+centerco11 = np.array([[5,-1,1]]).T
+directco11 = np.array([0,1,-0.9])
+srcco11 = single_ray_source(centerco11, directco11, G)
+srcs.append(srcco11)
+ 
+# Frustum sources
+# Frustum Source 1:
+centerf1 = np.array([[7,0.2,0.2]]).T
+directf1 = np.array([1,0,0])
+srcf1 = single_ray_source(centerf1, directf1, G)
+srcs.append(srcf1)
+# Frustum Source 2:
+centerf2 = np.array([[10,3,3]]).T
+directf2 = np.array([0,-1,-1])
+srcf2 = single_ray_source(centerf2, directf2, G)
+srcs.append(srcf2)
+# Frustum Source 3:
+centerf3 = np.array([[10,0,0.2]]).T
+directf3 = np.array([-1,0,0])
+srcf3 = single_ray_source(centerf3, directf3, G)
+srcs.append(srcf3)
+# Frustum Source 4:
+centerf4 = np.array([[10,0.6,3]]).T
+directf4 = np.array([0,0,-1])
+srcf4 = single_ray_source(centerf4, directf4, G)
+srcs.append(srcf4)
+# Frustum Source 5:
+centerf5 = np.array([[7,0.8,0.2]]).T
+directf5 = np.array([1,0,0])
+srcf5 = single_ray_source(centerf5, directf5, G)
+srcs.append(srcf5)  
+# Frustum Source 6:
+centerf6 = np.array([[7,0.6,0.2]]).T
+directf6 = np.array([1,0,0])
+srcf6 = single_ray_source(centerf6, directf6, G)
+srcs.append(srcf6)  
+# Frustum Source 7:
+centerf7 = np.array([[7,0.4,0.2]]).T
+directf7 = np.array([1,0,0])
+srcf7 = single_ray_source(centerf7, directf7, G)
+srcs.append(srcf7)  
+# Frustum Source 8:
+centerf8 = np.array([[10,0,-1]]).T
+directf8 = np.array([0,0.5,1])
+srcf8 = single_ray_source(centerf8, directf8, G)
+srcs.append(srcf8)  
+# Frustum Source 9:
+centerf9 = np.array([[10,0,-1]]).T
+directf9 = np.array([0,0.7,1])
+srcf9 = single_ray_source(centerf9, directf9, G)
+srcs.append(srcf9) 
+# Frustum Source 10:
+centerf10 = np.array([[10,0,-1]]).T
+directf10 = np.array([0,0.8,1])
+srcf10 = single_ray_source(centerf10, directf10, G)
+srcs.append(srcf10)  
+# Frustum Source 11:
+centerf11 = np.array([[10,0,-1]]).T
+directf11 = np.array([0,0.9,1])
+srcf11 = single_ray_source(centerf11, directf11, G)
+srcs.append(srcf11)   
 
-# Raytrace!
+# Concatenate Sources using ray_bundle method:
+src = concatenate_rays(srcs)
+'''
+<<< RAYTRACE! >>>
+'''
+# TracerEngine instance declaration and ray_tracer parameter choice.
 engine = TracerEngine(A)
-itmax = 1000 # stop iteration after this many ray bundles were generated (i.e. 
+itmax = 10 # stop iteration after this many ray bundles were generated (i.e. 
             # after the original rays intersected some surface this many times).
-minener = 0.001 # minimum energy threshold
-engine.ray_tracer(src, itmax, minener)
+minener = 0.1 # minimum energy threshold
+engine.ray_tracer(src, itmax, minener, tree = True)
+Cone_acc = AbsorptionAccountant.get_all_hits(CON.get_surfaces()[0].get_optics_manager())
+Cone_abs = Cone_acc[0]
+Cone_hits = Cone_acc[1]
+Frustum_acc = AbsorptionAccountant.get_all_hits(FRU.get_surfaces()[0].get_optics_manager())
+Frustum_abs = Frustum_acc[0]
+Frustum_hits = Frustum_acc[1]
+print 'Cone_abs', Cone_abs
+print 'Frustum_abs', Frustum_abs
+print 'rays_in'
+print engine.rays_in
+print 'lost_energy'
+print engine.lost_energy
 
-t1 = time.clock()-t0
-print 'Raytrace calculation time: ', t1
-
+print 'balance:', N.sum(src.get_energy())-N.sum(N.concatenate(engine.lost_energy))-N.sum(N.concatenate((Cone_abs,Frustum_abs)))
 '''
 __________________________________________________________________________________________________________________
 Rendering:
@@ -211,8 +356,8 @@ def show_rays(engine, escaping_len=5., highlight_level=None):
     no.addChild(plot_rays_color(co))
     no.addChild(plot_rays_color(co_h, color=(1,1,1)))
     num = len(text)    
-    #for ref in range(num):
-    #    no.addChild(plot_level_number(pos[ref], text[ref]))
+    for i in range(num):
+        no.addChild(plot_level_number(pos[i], text[i]))
     print "Number of reflections", num
     return no
 
@@ -300,5 +445,6 @@ viewer.show()
 
 SoGui.show(win)
 SoGui.mainLoop()
+
 
 # vim: et:ts=4

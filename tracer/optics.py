@@ -48,6 +48,7 @@ def reflections(ray_dirs, normals):
     Returns: new ray directions as the result of reflection, 3 by n array.
     """
     vertical = N.sum(ray_dirs*normals, axis=0)*normals # normal dot ray, really
+    
     return ray_dirs - 2*vertical
 
 def refractions(n1, n2, ray_dirs, normals):

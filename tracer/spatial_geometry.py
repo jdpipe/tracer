@@ -15,7 +15,7 @@ def general_axis_rotation(axis,  angle):
     Returns: A 3x3 array representing the matrix of rotation.
     Reference: [1] p.47
     """
-    s = sin(angle); c = cos(angle); v = 1 - c
+    N.round_(sin(ang), decimals=14); c = N.round_(cos(ang), decimals=14); v = 1 - c
     add = N.array([[0,          -axis[2], axis[1]],  
                             [axis[2],  0,          -axis[0]], 
                             [-axis[1], axis[0],  0        ] ])
@@ -60,7 +60,7 @@ def generate_transform(axis, angle, translation):
 
 def rotx(ang):
     """Generate a homogenous trransform for ang radians around the x axis"""
-    s = sin(ang); c = cos(ang)
+    s = N.round_(sin(ang), decimals=14); c = N.round_(cos(ang), decimals=14)
     return N.array([
         [1., 0, 0, 0],
         [0, c,-s, 0],
@@ -70,7 +70,7 @@ def rotx(ang):
 
 def roty(ang):
     """Generate a homogenous trransform for ang radians around the y axis"""
-    s = sin(ang); c = cos(ang)
+    s = N.round_(sin(ang), decimals=14); c = N.round_(cos(ang), decimals=14)
     return N.array([
         [c, 0, s, 0],
         [0, 1, 0, 0],
@@ -80,7 +80,7 @@ def roty(ang):
 
 def rotz(ang):
     """Generate a homogenous trransform for ang radians around the z axis"""
-    s = sin(ang); c = cos(ang)
+    s = N.round_(sin(ang), decimals=14); c = N.round_(cos(ang), decimals=14)
     return N.array([
         [c,-s, 0, 0],
         [s, c, 0, 0],

@@ -32,8 +32,7 @@ class InfiniteCylinder(QuadricGM):
         # Transform the the direction and position of the rays temporarily into the
         # frame of the paraboloid for calculations
         d = N.dot(self._working_frame[:3,:3].T, bundle.get_directions())
-        v = N.dot(N.linalg.inv(self._working_frame),
-            N.vstack((bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
+        v = N.dot(N.linalg.inv(self._working_frame), N.vstack((bundle.get_vertices(), N.ones(d.shape[1]))))[:3]
         
         A = N.sum(d[:2]**2, axis=0)
         B = 2*N.sum(d[:2]*v[:2], axis=0)
@@ -43,8 +42,7 @@ class InfiniteCylinder(QuadricGM):
     
     def _normals(self, verts, dirs):
         # Move to local coordinates
-        hit = N.dot(N.linalg.inv(self._working_frame),
-            N.vstack((verts.T, N.ones(verts.shape[0]))))
+        hit = N.dot(N.linalg.inv(self._working_frame), N.vstack((verts.T, N.ones(verts.shape[0]))))
         dir_loc = N.dot(self._working_frame[:3,:3].T, dirs.T)
         
         # The local normal is made from the X,Y components of the vertex:
@@ -88,10 +86,10 @@ class FiniteCylinder(InfiniteCylinder):
         height = N.sum(N.linalg.inv(self._working_frame)[None,2,:,None] * \
             N.concatenate((coords, N.ones((2,1,coords.shape[-1]))), axis=1), axis=1)
         inside = (abs(height) <= self._half_h)
-        positive = prm > 0
+        positive = prm > 1e-10
         
         hitting = inside & positive
-        select[N.logical_and(*hitting)] = 0
+        select[N.logical_and(*hitting)] = 1
         one_hitting = N.logical_xor(*hitting)
         select[one_hitting] = N.nonzero(hitting.T[one_hitting,:])[1]
 

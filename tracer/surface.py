@@ -55,7 +55,7 @@ class Surface(HasFrame):
         Returns
         A 1D array with the parametric position of intersection along each of
             the rays. Rays that missed the surface return +infinity.
-        """
+        """      
         self._current_bundle = ray_bundle
         return self._geom.find_intersections(self._temp_frame, ray_bundle)
     
@@ -104,8 +104,8 @@ class Surface(HasFrame):
         returns:
         local - a 3 x n array with the respective points in local coordinates.
         """
-        return N.dot(N.linalg.inv(self._temp_frame), 
-            N.vstack((points, N.ones(points.shape[1]))))
+        proj = N.round(N.linalg.inv(self._temp_frame), decimals=9)
+        return N.dot(proj, N.vstack((points, N.ones(points.shape[1]))))
     
     def mesh(self, resolution):
         """
